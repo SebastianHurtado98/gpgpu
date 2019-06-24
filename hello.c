@@ -25,7 +25,7 @@ const char* programSource =
 "}                                                   \n"
 ;
 
-int vectMultiplication(int *matrixA, int *matrixB) {
+int vectMultiplication(int *matrixA, int *matrixB, int vectSize) {
 
 
     // This code executes on the OpenCL host
@@ -35,7 +35,7 @@ int vectMultiplication(int *matrixA, int *matrixB) {
     int *C = NULL;  // Output array
     
     // Elements in each array
-    const int elements = 32;   
+    const int elements = vectSize;   
     
     // Compute the size of the data 
     size_t datasize = sizeof(int)*elements;
@@ -340,9 +340,11 @@ int main(){
 	int *matrixA = NULL;
 	int *matrixB = NULL;
 	int *matrixC = NULL;
+    
+    int size = 32;
+    //scanf("%d", &size);
 
-
-	const int totalElements = 1024;
+	const int totalElements = size*size;
 
 	size_t datasizeTotal = sizeof(int)*totalElements;
 
@@ -351,32 +353,27 @@ int main(){
 	matrixC = (int*)malloc(datasizeTotal);
 
 	for(int i = 0; i < totalElements; i++) {
-	matrixA[i] = i;
-	matrixB[i] = i;
+	matrixA[i] = 2;
+	matrixB[i] = 2;
 	}
 
 
-	size_t datasizeVect = sizeof(int)*32;
+	size_t datasizeVect = sizeof(int)*size;
 	int *vectA = NULL;
 	int *vectB = NULL;
 	vectA = (int*)malloc(datasizeVect);
 	vectB = (int*)malloc(datasizeVect);
 
-	for(int i = 0; i < 32; i++){
-		for (int j = 0; j < 32; j++){
-			for (int k = 0; k < 32; k++){
+	for(int i = 0; i < size; i++){
+		for (int j = 0; j < size; j++){
+			for (int k = 0; k < size; k++){
 
-				vectA[k] = matrixA[(i*32) + k];
-				vectB[k] = matrixB[(k*32) + j];
+				vectA[k] = matrixA[(i*size) + k];
+				vectB[k] = matrixB[(k*size) + j];
 			}
-			printf("%d \n", (i*32)+j);
-			matrixC[(i*32) + j] = vectMultiplication(vectA, vectB);
-		}
-	}
-
-	for(int i =0; i<32; i++){
-		for(int j = 0; j<32; j++){
-			printf("%d", matrixC[(i*32) + j]);
+			printf("%d \n", (i*size)+j);
+			matrixC[(i*size) + j] = vectMultiplication(vectA, vectB, size);
+            printf("%d	\n", matrixC[(i*size) + j]);
 		}
 	}
 
