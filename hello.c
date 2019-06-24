@@ -304,18 +304,6 @@ int vectMultiplication(int *matrixA, int *matrixB) {
         NULL);
 
     // Verify the output
-    bool result = true;
-    for(int i = 0; i < elements; i++) {
-        if(C[i] != i*i) {
-            result = false;
-            break;
-        }
-    }
-    if(result) {
-        printf("Output is correct\n");
-    } else {
-        printf("Output is incorrect\n");
-    }
 
     //-----------------------------------------------------
     // STEP 13: Release OpenCL resources
