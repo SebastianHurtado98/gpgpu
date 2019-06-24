@@ -1,11 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef MAC
-#include <OpenCL/cl.h>
-#else
 #include <CL/cl.h>
-#endif
 int main() {
     cl_platform_id platform;
     cl_device_id *devices;
@@ -17,7 +13,7 @@ int main() {
         perror("Couldn't find any platforms");
         exit(1);
     }
-    err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL,
+    err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU,
                          1, NULL, &num_devices);
     if(err < 0) {
         perror("Couldn't find any devices");
@@ -25,7 +21,7 @@ int main() {
     }
     devices = (cl_device_id*)
             malloc(sizeof(cl_device_id) * num_devices);
-    clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL,
+    clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU,
                    num_devices, devices, NULL);
     for(i=0; i<num_devices; i++) {
         err = clGetDeviceInfo(devices[i], CL_DEVICE_NAME,
@@ -34,6 +30,7 @@ int main() {
             perror("Couldn't read extension data");
             exit(1);
         }
+        
         clGetDeviceInfo(devices[i], CL_DEVICE_ADDRESS_BITS,
                         sizeof(ext_data), &addr_data, NULL);
         clGetDeviceInfo(devices[i], CL_DEVICE_EXTENSIONS,
