@@ -8,17 +8,12 @@
 #define HB WA
 #define WC WB
 #define HC HA
- 
-// Allocates a matrix with random float entries.
+
 void randomInit(float* data, int size)
 {
    for (int i = 0; i < size; ++i)
    data[i] = rand() / (float)RAND_MAX;
 }
- 
-/////////////////////////////////////////////////////////
-// Program main
-/////////////////////////////////////////////////////////
  
 int
 main(int argc, char** argv)
