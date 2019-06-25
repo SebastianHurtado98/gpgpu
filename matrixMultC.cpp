@@ -39,9 +39,9 @@ int main()
    size_t kernelLength;
    cl_int errcode;
  
-   cl_mem d_A;
-   cl_mem d_B;
-   cl_mem d_C;
+   cl_mem bufferA;
+   cl_mem bufferB;
+   cl_mem bufferC;
  
    clGPUContext = clCreateContextFromType(0, 
                    CL_DEVICE_TYPE_GPU, 
@@ -64,13 +64,13 @@ int main()
                   clDevices[0], 0, &errcode);
 
    // Setup device memory
-   d_C = clCreateBuffer(clGPUContext, 
+   bufferC = clCreateBuffer(clGPUContext, 
           CL_MEM_READ_WRITE, 
           memSizeC, NULL, &errcode);
-   d_A = clCreateBuffer(clGPUContext, 
+   bufferA = clCreateBuffer(clGPUContext, 
           CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
           memSizeA, A, &errcode);
-   d_B = clCreateBuffer(clGPUContext, 
+   bufferB = clCreateBuffer(clGPUContext, 
           CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
           memSizeB, B, &errcode);
  
@@ -93,7 +93,6 @@ int main()
                 1, (const char **)&clMatrixMul, 
                 &kernelLength, &errcode);
 
- 
    errcode = clBuildProgram(clProgram, 0, 
               NULL, NULL, NULL, NULL);
 
@@ -105,24 +104,22 @@ int main()
  
    // 7. Launch OpenCL kernel
    size_t localWorkSize[2], globalWorkSize[2];
- 
-   int wA = size;
-   int wC = size;
+   
    errcode = clSetKernelArg(clKernel, 0, 
-              sizeof(cl_mem), (void *)&d_C);
+              sizeof(cl_mem), (void *)&bufferC);
    errcode |= clSetKernelArg(clKernel, 1, 
-              sizeof(cl_mem), (void *)&d_A);
+              sizeof(cl_mem), (void *)&bufferA);
    errcode |= clSetKernelArg(clKernel, 2, 
-              sizeof(cl_mem), (void *)&d_B);
+              sizeof(cl_mem), (void *)&bufferB);
    errcode |= clSetKernelArg(clKernel, 3, 
-              sizeof(int), (void *)&wA);
+              sizeof(int), (void *)&size);
    errcode |= clSetKernelArg(clKernel, 4, 
-              sizeof(int), (void *)&wC);
+              sizeof(int), (void *)&size);
  
    localWorkSize[0] = 16;
    localWorkSize[1] = 16;
-   globalWorkSize[0] = 1024;
-   globalWorkSize[1] = 1024;
+   globalWorkSize[0] = size;
+   globalWorkSize[1] = size;
  
    errcode = clEnqueueNDRangeKernel(clCommandQue, 
               clKernel, 2, NULL, globalWorkSize, 
@@ -130,7 +127,7 @@ int main()
  
    // 8. Retrieve result from device
    errcode = clEnqueueReadBuffer(clCommandQue, 
-              d_C, CL_TRUE, 0, memSizeC, 
+              bufferC, CL_TRUE, 0, memSizeC, 
               C, 0, NULL, NULL);
 
  
@@ -144,14 +141,14 @@ int main()
    }
    printf("\n");
  
-   // 10. clean up memory
+
    free(A);
    free(B);
    free(C);
  
-   clReleaseMemObject(d_A);
-   clReleaseMemObject(d_C);
-   clReleaseMemObject(d_B);
+   clReleaseMemObject(bufferA);
+   clReleaseMemObject(bufferC);
+   clReleaseMemObject(bufferB);
  
    free(clDevices);
    free(clMatrixMul);
