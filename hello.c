@@ -84,7 +84,7 @@ int vectMultiplication(int *matrixA, int *matrixB, int vectSize) {
     // devices present
     status = clGetDeviceIDs(
         platforms[0], 
-        CL_DEVICE_TYPE_ALL, 
+        CL_DEVICE_TYPE_GPU, 
         0, 
         NULL, 
         &numDevices);
@@ -97,7 +97,7 @@ int vectMultiplication(int *matrixA, int *matrixB, int vectSize) {
     // Fill in devices with clGetDeviceIDs()
     status = clGetDeviceIDs(
         platforms[0], 
-        CL_DEVICE_TYPE_ALL,        
+        CL_DEVICE_TYPE_GPU,        
         numDevices, 
         devices, 
         NULL);
