@@ -6,7 +6,7 @@
 void randomInit(float* data, int size)
 {
    for (int i = 0; i < size; ++i)
-   data[i] = 7;
+   data[i] = 10;
 }
 
 int main()

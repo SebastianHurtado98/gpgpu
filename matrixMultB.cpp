@@ -20,15 +20,32 @@ const char* programSource =
 "}                                                   \n"
 ;
 
-int vectMultiplication(int *matrixA, int *matrixB) {
+int main() {
 
+    int *matrixA = NULL;
+	int *matrixB = NULL;
+	int *matrixC = NULL;
+
+
+	const int totalElements = 1024*1024;
+
+	size_t datasizeTotal = sizeof(int)*totalElements;
+
+	matrixA = (int*)malloc(datasizeTotal);
+	matrixB = (int*)malloc(datasizeTotal);
+	matrixC = (int*)malloc(datasizeTotal);
+
+	for(int i = 0; i < totalElements; i++) {
+	    matrixA[i] = 10;
+	    matrixB[i] = 10;
+	}
 
     int *A = NULL; 
     int *B = NULL; 
     int *C = NULL;
     
 
-    const int elements = 32;   
+    const int elements = 1024;   
     
     size_t datasize = sizeof(int)*elements;
 
@@ -36,10 +53,7 @@ int vectMultiplication(int *matrixA, int *matrixB) {
     B = (int*)malloc(datasize);
     C = (int*)malloc(datasize);
 
-    for(int i = 0; i < elements; i++) {
-        A[i] = matrixA[i]; 
-        B[i] = matrixB[i]; 
-    }
+
 
     cl_int status;  
      
@@ -142,87 +156,104 @@ int vectMultiplication(int *matrixA, int *matrixB) {
         NULL, 
         NULL);
 
-
-    //Repetible:
-    status = clEnqueueWriteBuffer(
-        cmdQueue, 
-        bufferA, 
-        CL_FALSE, 
-        0, 
-        datasize,                         
-        A, 
-        0, 
-        NULL, 
-        NULL);
-    
-    status = clEnqueueWriteBuffer(
-        cmdQueue, 
-        bufferB, 
-        CL_FALSE, 
-        0, 
-        datasize,                                  
-        B, 
-        0, 
-        NULL, 
-        NULL);
-
-
     cl_kernel kernel = NULL;
 
     kernel = clCreateKernel(program, "vectMult", &status);
 
-    status  = clSetKernelArg(
-        kernel, 
-        0, 
-        sizeof(cl_mem), 
-        &bufferA);
-    status |= clSetKernelArg(
-        kernel, 
-        1, 
-        sizeof(cl_mem), 
-        &bufferB);
-    status |= clSetKernelArg(
-        kernel, 
-        2, 
-        sizeof(cl_mem), 
-        &bufferC);
 
-    size_t globalWorkSize[1];    
-    globalWorkSize[0] = elements;
+    //Repetible:
+    for(int i = 0; i < elements; i++){
+		for (int j = 0; j < elements; j++){
+			for (int k = 0; k < elements; k++){
+				A[k] = matrixA[(i*elements) + k];
+				B[k] = matrixB[(k*elements) + j];
+			}
 
-    status = clEnqueueNDRangeKernel(
-        cmdQueue, 
-        kernel, 
-        1, 
-        NULL, 
-        globalWorkSize, 
-        NULL, 
-        0, 
-        NULL, 
-        NULL);
+            
+			
+        status = clEnqueueWriteBuffer(
+            cmdQueue, 
+            bufferA, 
+            CL_FALSE, 
+            0, 
+            datasize,                         
+            A, 
+            0, 
+            NULL, 
+            NULL);
+        
+        status = clEnqueueWriteBuffer(
+            cmdQueue, 
+            bufferB, 
+            CL_FALSE, 
+            0, 
+            datasize,                                  
+            B, 
+            0, 
+            NULL, 
+            NULL);
+
+        status  = clSetKernelArg(
+            kernel, 
+            0, 
+            sizeof(cl_mem), 
+            &bufferA);
+        status |= clSetKernelArg(
+            kernel, 
+            1, 
+            sizeof(cl_mem), 
+            &bufferB);
+        status |= clSetKernelArg(
+            kernel, 
+            2, 
+            sizeof(cl_mem), 
+            &bufferC);
+
+        size_t globalWorkSize[1];    
+        globalWorkSize[0] = elements;
+
+        status = clEnqueueNDRangeKernel(
+            cmdQueue, 
+            kernel, 
+            1, 
+            NULL, 
+            globalWorkSize, 
+            NULL, 
+            0, 
+            NULL, 
+            NULL);
 
 
-    clEnqueueReadBuffer(
-        cmdQueue, 
-        bufferC, 
-        CL_TRUE, 
-        0, 
-        datasize, 
-        C, 
-        0, 
-        NULL, 
-        NULL);
+        clEnqueueReadBuffer(
+            cmdQueue, 
+            bufferC, 
+            CL_TRUE, 
+            0, 
+            datasize, 
+            C, 
+            0, 
+            NULL, 
+            NULL);
 
-    int count = 0;
-	for(int i = 0; i < 32 ; i++){
-		count = count + C[i];
+        int count = 0;
+        for(int w = 0; w < elements ; w++){
+            count = count + C[w];
+        }
+
+        matrixC[(i*elements) + j] = count;
+		}
 	}
-
-    count;
-
     //fin de repetible
-    //AL FINAL!!!
+    //AL FINAL!!
 
+   printf("\n\nMatrix C (Results)\n");
+   for(int i = 0; i < totalElements; i++)
+   {
+      printf("%d ", matrixC[i]);
+      if(((i + 1) % elements) == 0) printf("\n");
+   }
+   printf("\n");
+   
 
     clReleaseKernel(kernel);
     clReleaseProgram(program);
@@ -236,58 +267,7 @@ int vectMultiplication(int *matrixA, int *matrixB) {
     free(B);
     free(C);
     free(platforms);
-    free(devices);
-
-    //por borrar:
-    return count;
-	
+    free(devices);	
 
 }
 
-
-
-int main(){
-	int *matrixA = NULL;
-	int *matrixB = NULL;
-	int *matrixC = NULL;
-
-
-	const int totalElements = 1024;
-
-	size_t datasizeTotal = sizeof(int)*totalElements;
-
-	matrixA = (int*)malloc(datasizeTotal);
-	matrixB = (int*)malloc(datasizeTotal);
-	matrixC = (int*)malloc(datasizeTotal);
-
-	for(int i = 0; i < totalElements; i++) {
-	    matrixA[i] = 1;
-	    matrixB[i] = 1;
-	}
-
-
-	size_t datasizeVect = sizeof(int)*32;
-	int *vectA = NULL;
-	int *vectB = NULL;
-	vectA = (int*)malloc(datasizeVect);
-	vectB = (int*)malloc(datasizeVect);
-
-	for(int i = 0; i < 32; i++){
-		for (int j = 0; j < 32; j++){
-			for (int k = 0; k < 32; k++){
-
-				vectA[k] = matrixA[(i*32) + k];
-				vectB[k] = matrixB[(k*32) + j];
-			}
-			printf("%d \n", (i*32)+j);
-			matrixC[(i*32) + j] = vectMultiplication(vectA, vectB);
-		}
-	}
-
-	for(int i =0; i<32; i++){
-		for(int j = 0; j<32; j++){
-			printf("%d", matrixC[(i*32) + j]);
-		}
-	}
-
-}
