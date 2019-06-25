@@ -6,7 +6,7 @@
 
 const char* programSource =
 "__kernel                                            \n"
-"void vecadd(__global int *A,                        \n"
+"void vectMult(__global int *A,                        \n"
 "            __global int *B,                        \n"
 "            __global int *C)                        \n"
 "{                                                   \n"
@@ -125,7 +125,25 @@ int vectMultiplication(int *matrixA, int *matrixB) {
         datasize, 
         NULL, 
         &status);
- 
+
+
+    cl_program program = clCreateProgramWithSource(
+        context, 
+        1, 
+        (const char**)&programSource,                                 
+        NULL, 
+        &status);
+
+    status = clBuildProgram(
+        program, 
+        numDevices, 
+        devices, 
+        NULL, 
+        NULL, 
+        NULL);
+
+
+    //Repetible:
     status = clEnqueueWriteBuffer(
         cmdQueue, 
         bufferA, 
@@ -148,25 +166,10 @@ int vectMultiplication(int *matrixA, int *matrixB) {
         NULL, 
         NULL);
 
-    cl_program program = clCreateProgramWithSource(
-        context, 
-        1, 
-        (const char**)&programSource,                                 
-        NULL, 
-        &status);
-
-    status = clBuildProgram(
-        program, 
-        numDevices, 
-        devices, 
-        NULL, 
-        NULL, 
-        NULL);
-   
 
     cl_kernel kernel = NULL;
 
-    kernel = clCreateKernel(program, "vecadd", &status);
+    kernel = clCreateKernel(program, "vectMult", &status);
 
     status  = clSetKernelArg(
         kernel, 
@@ -210,6 +213,16 @@ int vectMultiplication(int *matrixA, int *matrixB) {
         NULL, 
         NULL);
 
+    int count = 0;
+	for(int i = 0; i < 32 ; i++){
+		count = count + C[i];
+	}
+
+    count;
+
+    //fin de repetible
+    //AL FINAL!!!
+
 
     clReleaseKernel(kernel);
     clReleaseProgram(program);
@@ -219,18 +232,15 @@ int vectMultiplication(int *matrixA, int *matrixB) {
     clReleaseMemObject(bufferC);
     clReleaseContext(context);
 
-	int count = 0;
-	for(int i = 0; i < 32 ; i++){
-		count = count + C[i];
-	}
-
     free(A);
     free(B);
     free(C);
     free(platforms);
     free(devices);
 
-	return count;
+    //por borrar:
+    return count;
+	
 
 }
 
@@ -251,8 +261,8 @@ int main(){
 	matrixC = (int*)malloc(datasizeTotal);
 
 	for(int i = 0; i < totalElements; i++) {
-	    matrixA[i] = i;
-	    matrixB[i] = i;
+	    matrixA[i] = 1;
+	    matrixB[i] = 1;
 	}
 
 
