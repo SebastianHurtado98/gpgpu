@@ -2,63 +2,34 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-#define WA 1024
-#define HA 1024
-#define WB 1024
-#define HB WA
-#define WC WB
-#define HC HA
-
+ 
 void randomInit(float* data, int size)
 {
    for (int i = 0; i < size; ++i)
-   data[i] = rand() / (float)RAND_MAX;
+   data[i] = 1;
 }
- 
-int
-main(int argc, char** argv)
+
+int main()
 {
- 
-   // set seed for rand()
-   srand(2006);
+   int size = 1024;
  
    // 1. allocate host memory for matrices A and B
-   unsigned int size_A = WA * HA;
-   unsigned int mem_size_A = sizeof(float) * size_A;
-   float* h_A = (float*) malloc(mem_size_A);
+   unsigned int sizeA = size * size;
+   unsigned int memSizeA = sizeof(float) * sizeA;
+   float* A = (float*) malloc(memSizeA);
  
-   unsigned int size_B = WB * HB;
-   unsigned int mem_size_B = sizeof(float) * size_B;
-   float* h_B = (float*) malloc(mem_size_B);
+   unsigned int sizeB = size * size;
+   unsigned int memSizeB = sizeof(float) * sizeB;
+   float* B = (float*) malloc(memSizeB);
+
+   randomInit(A, sizeA);
+   randomInit(B, sizeB);
+
  
-   // 2. initialize host memory
-   randomInit(h_A, size_A);
-   randomInit(h_B, size_B);
+   unsigned int sizeC = size * size;
+   unsigned int memSizeC = sizeof(float) * sizeC;
+   float* C = (float*) malloc(memSizeC);
  
-   // 3. print out A and B
-   printf("\n\nMatrix A\n");
-   for(int i = 0; i < size_A; i++)
-   {
-      printf("%f ", h_A[i]);
-      if(((i + 1) % WA) == 0)
-      printf("\n");
-   }
- 
-   printf("\n\nMatrix B\n");
-   for(int i = 0; i < size_B; i++)
-   {
-      printf("%f ", h_B[i]);
-      if(((i + 1) % WB) == 0)
-      printf("\n");
-   }
- 
-   // 4. allocate host memory for the result C
-   unsigned int size_C = WC * HC;
-   unsigned int mem_size_C = sizeof(float) * size_C;
-   float* h_C = (float*) malloc(mem_size_C);
- 
-   // 5. Initialize OpenCL
-   // OpenCL specific variables
    cl_context clGPUContext;
    cl_command_queue clCommandQue;
    cl_program clProgram;
@@ -68,14 +39,10 @@ main(int argc, char** argv)
    size_t kernelLength;
    cl_int errcode;
  
-   // OpenCL device memory for matrices
    cl_mem d_A;
    cl_mem d_B;
    cl_mem d_C;
  
-   /*****************************************/
-   /* Initialize OpenCL */
-   /*****************************************/
    clGPUContext = clCreateContextFromType(0, 
                    CL_DEVICE_TYPE_GPU, 
                    NULL, NULL, &errcode);
@@ -99,13 +66,13 @@ main(int argc, char** argv)
    // Setup device memory
    d_C = clCreateBuffer(clGPUContext, 
           CL_MEM_READ_WRITE, 
-          mem_size_A, NULL, &errcode);
+          memSizeC, NULL, &errcode);
    d_A = clCreateBuffer(clGPUContext, 
           CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
-          mem_size_A, h_A, &errcode);
+          memSizeA, A, &errcode);
    d_B = clCreateBuffer(clGPUContext, 
           CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
-          mem_size_B, h_B, &errcode);
+          memSizeB, B, &errcode);
  
  
    // 6. Load and build OpenCL kernel
@@ -139,8 +106,8 @@ main(int argc, char** argv)
    // 7. Launch OpenCL kernel
    size_t localWorkSize[2], globalWorkSize[2];
  
-   int wA = WA;
-   int wC = WC;
+   int wA = size;
+   int wC = size;
    errcode = clSetKernelArg(clKernel, 0, 
               sizeof(cl_mem), (void *)&d_C);
    errcode |= clSetKernelArg(clKernel, 1, 
@@ -163,24 +130,24 @@ main(int argc, char** argv)
  
    // 8. Retrieve result from device
    errcode = clEnqueueReadBuffer(clCommandQue, 
-              d_C, CL_TRUE, 0, mem_size_C, 
-              h_C, 0, NULL, NULL);
+              d_C, CL_TRUE, 0, memSizeC, 
+              C, 0, NULL, NULL);
 
  
    // 9. print out the results
    printf("\n\nMatrix C (Results)\n");
-   for(int i = 0; i < size_C; i++)
+   for(int i = 0; i < sizeC; i++)
    {
-      printf("%f ", h_C[i]);
-      if(((i + 1) % WC) == 0)
+      printf("%f ", C[i]);
+      if(((i + 1) % size) == 0)
       printf("\n");
    }
    printf("\n");
  
    // 10. clean up memory
-   free(h_A);
-   free(h_B);
-   free(h_C);
+   free(A);
+   free(B);
+   free(C);
  
    clReleaseMemObject(d_A);
    clReleaseMemObject(d_C);
