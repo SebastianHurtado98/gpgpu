@@ -11,9 +11,14 @@ void randomInit(float* data, int size)
 
 int main()
 {
+   float* matrixA = NULL;
+   float* matrixB = NULL;
+   float* matrixC = NULL;
+   
+
    int size = 1024;
- 
-   // 1. allocate host memory for matrices A and B
+   int totalElements = 1024*1024;
+
    unsigned int sizeA = size * size;
    unsigned int memSizeA = sizeof(float) * sizeA;
    float* A = (float*) malloc(memSizeA);
@@ -47,8 +52,6 @@ int main()
                    CL_DEVICE_TYPE_GPU, 
                    NULL, NULL, &errcode);
  
-   // get the list of GPU devices associated 
-   // with context
    errcode = clGetContextInfo(clGPUContext, 
               CL_CONTEXT_DEVICES, 0, NULL, 
               &dataBytes);
@@ -59,11 +62,9 @@ int main()
               clDevices, NULL);
 
  
-   //Create a command-queue
    clCommandQue = clCreateCommandQueue(clGPUContext, 
                   clDevices[0], 0, &errcode);
 
-   // Setup device memory
    bufferC = clCreateBuffer(clGPUContext, 
           CL_MEM_READ_WRITE, 
           memSizeC, NULL, &errcode);
@@ -73,9 +74,7 @@ int main()
    bufferB = clCreateBuffer(clGPUContext, 
           CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
           memSizeB, B, &errcode);
- 
- 
-   // 6. Load and build OpenCL kernel
+
    char *clMatrixMul = "__kernel void matrixMul(__global float* C,"
           "__global float* A, "
           "__global float* B, "
@@ -102,7 +101,6 @@ int main()
 
  
  
-   // 7. Launch OpenCL kernel
    size_t localWorkSize[2], globalWorkSize[2];
    
    errcode = clSetKernelArg(clKernel, 0, 
@@ -125,7 +123,6 @@ int main()
               clKernel, 2, NULL, globalWorkSize, 
               localWorkSize, 0, NULL, NULL);
  
-   // 8. Retrieve result from device
    errcode = clEnqueueReadBuffer(clCommandQue, 
               bufferC, CL_TRUE, 0, memSizeC, 
               C, 0, NULL, NULL);

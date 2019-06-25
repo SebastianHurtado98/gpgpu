@@ -6,9 +6,9 @@
 
 const char* programSource =
 "__kernel                                            \n"
-"void vectMult(__global int *A,                        \n"
-"            __global int *B,                        \n"
-"            __global int *C)                        \n"
+"void vectMult(__global float *A,                        \n"
+"            __global float *B,                        \n"
+"            __global float *C)                        \n"
 "{                                                   \n"
 "                                                    \n"
 "   // Get the work-item’s unique ID                 \n"
@@ -22,36 +22,36 @@ const char* programSource =
 
 int main() {
 
-    int *matrixA = NULL;
-	int *matrixB = NULL;
-	int *matrixC = NULL;
+    float *matrixA = NULL;
+	float *matrixB = NULL;
+	float *matrixC = NULL;
 
+    int size = 32;   
+	int totalElements = size*size;
 
-	const int totalElements = 1024*1024;
+	size_t datasizeTotal = sizeof(float)*totalElements;
 
-	size_t datasizeTotal = sizeof(int)*totalElements;
-
-	matrixA = (int*)malloc(datasizeTotal);
-	matrixB = (int*)malloc(datasizeTotal);
-	matrixC = (int*)malloc(datasizeTotal);
+	matrixA = (float*)malloc(datasizeTotal);
+	matrixB = (float*)malloc(datasizeTotal);
+	matrixC = (float*)malloc(datasizeTotal);
 
 	for(int i = 0; i < totalElements; i++) {
 	    matrixA[i] = 10;
 	    matrixB[i] = 10;
 	}
 
-    int *A = NULL; 
-    int *B = NULL; 
-    int *C = NULL;
+    float *A = NULL; 
+    float *B = NULL; 
+    float *C = NULL;
     
 
-    const int elements = 1024;   
-    
-    size_t datasize = sizeof(int)*elements;
 
-    A = (int*)malloc(datasize);
-    B = (int*)malloc(datasize);
-    C = (int*)malloc(datasize);
+    
+    size_t datasize = sizeof(float)*size;
+
+    A = (float*)malloc(datasize);
+    B = (float*)malloc(datasize);
+    C = (float*)malloc(datasize);
 
 
 
@@ -162,11 +162,11 @@ int main() {
 
 
     //Repetible:
-    for(int i = 0; i < elements; i++){
-		for (int j = 0; j < elements; j++){
-			for (int k = 0; k < elements; k++){
-				A[k] = matrixA[(i*elements) + k];
-				B[k] = matrixB[(k*elements) + j];
+    for(int i = 0; i < size; i++){
+		for (int j = 0; j < size; j++){
+			for (int k = 0; k < size; k++){
+				A[k] = matrixA[(i*size) + k];
+				B[k] = matrixB[(k*size) + j];
 			}
 
             
@@ -210,7 +210,7 @@ int main() {
             &bufferC);
 
         size_t globalWorkSize[1];    
-        globalWorkSize[0] = elements;
+        globalWorkSize[0] = size;
 
         status = clEnqueueNDRangeKernel(
             cmdQueue, 
@@ -235,22 +235,22 @@ int main() {
             NULL, 
             NULL);
 
-        int count = 0;
-        for(int w = 0; w < elements ; w++){
+        float count = 0;
+        for(int w = 0; w < size ; w++){
             count = count + C[w];
         }
 
-        matrixC[(i*elements) + j] = count;
+        matrixC[(i*size) + j] = count;
 		}
 	}
     //fin de repetible
     //AL FINAL!!
 
-   printf("\n\nMatrix C (Results)\n");
+   printf("\n\nMatrix C: \n");
    for(int i = 0; i < totalElements; i++)
    {
-      printf("%d ", matrixC[i]);
-      if(((i + 1) % elements) == 0) printf("\n");
+      printf("%f ", matrixC[i]);
+      if(((i + 1) % size) == 0) printf("\n");
    }
    printf("\n");
    

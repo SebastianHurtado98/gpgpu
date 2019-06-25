@@ -5,25 +5,25 @@
 
 
 int main(){
-	int *matrixA = NULL;
-	int *matrixB = NULL;
-	int *matrixC = NULL;
+	float *matrixA = NULL;
+	float *matrixB = NULL;
+	float *matrixC = NULL;
     
-    int size = 1024;
+    int size = 32;
 
-	const int totalElements = size*size;
+	int totalElements = size*size;
 
-	size_t datasizeTotal = sizeof(int)*totalElements;
+	size_t datasizeTotal = sizeof(float)*totalElements;
 
-	matrixA = (int*)malloc(datasizeTotal);
-	matrixB = (int*)malloc(datasizeTotal);
-	matrixC = (int*)malloc(datasizeTotal);
+	matrixA = (float*)malloc(datasizeTotal);
+	matrixB = (float*)malloc(datasizeTotal);
+	matrixC = (float*)malloc(datasizeTotal);
 
 	for(int i = 0; i < totalElements; i++) {
-	matrixA[i] = 2;
-	matrixB[i] = 2;
+	matrixA[i] = 10;
+	matrixB[i] = 10;
 	}
-    int count;
+    float count;
 
 	for(int i = 0; i < size; i++){
 		for (int j = 0; j < size; j++){
@@ -38,7 +38,12 @@ int main(){
 	}
 
 
-    for (int i = 0 ; i<size; i++) for (int j=0; j<size; j++) printf("%d ", matrixC[(i*size) + j]);
-    printf("\n");
+    printf("\n\nMatrix C: \n");
+   for(int i = 0; i < totalElements; i++)
+   {
+      printf("%f ", matrixC[i]);
+      if(((i + 1) % size) == 0) printf("\n");
+   }
+   printf("\n");
 
 }
