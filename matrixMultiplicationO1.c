@@ -1,38 +1,13 @@
-// Project: 
-// Exploring the performance of general matrix-multiplication on an NVIDIA Tesla K40m GPU.
-//
-// File information:
-// Institution.... SURFsara <www.surfsara.nl>
-// Author......... Cedric Nugteren <cedric.nugteren@surfsara.nl>
-// Changed at..... 2014-11-07
-// License........ MIT license
-// Tab-size....... 4 spaces
-// Line length.... 100 characters
-//
-// Compilation example:
-// g++ -O3 -I$OPENCL_DIR/include minimal.cpp -o minimal -lOpenCL
-// 
-// =================================================================================================
-
-// Includes
 #include <stdio.h>
 #include <sys/time.h>
 #include <CL/cl.h>
 
-// =================================================================================================
-
-// Repeat all kernels multiple times to get an average timing result
 #define NUM_RUNS 2
 
-// Size of the matrices - K, M, N (squared)
 #define SIZE 4096
 
-// Threadblock sizes (e.g. for kernels myGEMM1 or myGEMM2)
 #define TS 32
 
-// =================================================================================================
-
-// Set the kernel as a string (better to do this in a separate file though)
 const char *kernelstring =
     "__kernel void myGEMM1(const int M, const int N, const int K,"
     "                      const __global float* A,"
@@ -47,17 +22,12 @@ const char *kernelstring =
     "    C[globalCol*M + globalRow] = acc;"
     "}";
 
-// =================================================================================================
-
-// Matrix-multiplication using a custom OpenCL SGEMM kernel.
 int main(int argc, char* argv[]) {
 
-    // Set the sizes
     int K = SIZE;
     int M = SIZE;
     int N = SIZE;
 
-    // Create the matrices and initialize them with random values
     float* A = (float*)malloc(M*K*sizeof(float*));
     float* B = (float*)malloc(K*N*sizeof(float*));
     float* C = (float*)malloc(M*N*sizeof(float*));
@@ -65,7 +35,6 @@ int main(int argc, char* argv[]) {
     for (int i=0; i<K*N; i++) { B[i] = 10.0; }
     for (int i=0; i<M*N; i++) { C[i] = 0.0; }
 
-    // Configure the OpenCL environment
     printf(">>> Initializing OpenCL...\n");
     cl_platform_id platform = 0;
     clGetPlatformIDs(1, &platform, NULL);
@@ -77,11 +46,9 @@ int main(int argc, char* argv[]) {
     clGetDeviceInfo(device, CL_DEVICE_NAME, 1024, deviceName, NULL);
     cl_event event = NULL;
 
-    // Compile the kernel
     cl_program program = clCreateProgramWithSource(context, 1, &kernelstring, NULL, NULL);
     clBuildProgram(program, 0, NULL, "", NULL, NULL);
 
-    // Check for compilation errors
     size_t logSize;
     clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &logSize);
     char* messages = (char*)malloc((1+logSize)*sizeof(char));
@@ -90,17 +57,14 @@ int main(int argc, char* argv[]) {
     if (logSize > 10) { printf(">>> Compiler message: %s\n", messages); }
     free(messages);
 
-    // Prepare OpenCL memory objects
     cl_mem bufA = clCreateBuffer(context, CL_MEM_READ_ONLY,  M*K*sizeof(float), NULL, NULL);
     cl_mem bufB = clCreateBuffer(context, CL_MEM_READ_ONLY,  K*N*sizeof(float), NULL, NULL);
     cl_mem bufC = clCreateBuffer(context, CL_MEM_READ_WRITE, M*N*sizeof(float), NULL, NULL);
 
-    // Copy matrices to the GPU
     clEnqueueWriteBuffer(queue, bufA, CL_TRUE, 0, M*K*sizeof(float), A, 0, NULL, NULL);
     clEnqueueWriteBuffer(queue, bufB, CL_TRUE, 0, K*N*sizeof(float), B, 0, NULL, NULL);
     clEnqueueWriteBuffer(queue, bufC, CL_TRUE, 0, M*N*sizeof(float), C, 0, NULL, NULL);
 
-    // Configure the myGEMM kernel and set its arguments
     cl_kernel kernel = clCreateKernel(program, "myGEMM1", NULL);
     clSetKernelArg(kernel, 0, sizeof(int), (void*)&M);
     clSetKernelArg(kernel, 1, sizeof(int), (void*)&N);
@@ -109,43 +73,32 @@ int main(int argc, char* argv[]) {
     clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&bufB);
     clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&bufC);
 
-    // Start the timed loop
     for (int r=0; r<1; r++) {
 
-        // Run the myGEMM kernel
-        const size_t local[1] = { TS};
-        const size_t global[1] = { M};
+        const size_t local[2] = {TS, TS};
+        const size_t global[2] = {M, N};
         clEnqueueNDRangeKernel(queue, kernel, 2, NULL, global, local, 0, NULL, &event);
         printf("%f", C[0]);
-        // Wait for calculations to be finished
         clWaitForEvents(1, &event);
     }
 
-    // End the timed loop
     printf("%f", C[0]);
-    // Copy the output matrix C back to the CPU memory
     clEnqueueReadBuffer(queue, bufC, CL_TRUE, 0, M*N*sizeof(float), C, 0, NULL, NULL);
-
     printf("%f", C[0]);
 
 
-
-    // Free the OpenCL memory objects
     clReleaseMemObject(bufA);
     clReleaseMemObject(bufB);
     clReleaseMemObject(bufC);
 
-    // Clean-up OpenCL 
     clReleaseCommandQueue(queue);
     clReleaseContext(context);
     clReleaseProgram(program);
     clReleaseKernel(kernel);
 
-    // Free the host memory objects
     free(A);
     free(B);
     free(C);
 
-    // Exit
     return 0;
 }
