@@ -136,25 +136,24 @@ int main()
    for(int i = 0; i < sizeC; i++)
    {
       printf("%f ", C[i]);
-      if(((i + 1) % size) == 0)
-      printf("\n");
+      if(((i + 1) % size) == 0) printf("\n");
    }
    printf("\n");
- 
 
-   free(A);
-   free(B);
-   free(C);
- 
+   
    clReleaseMemObject(bufferA);
    clReleaseMemObject(bufferC);
    clReleaseMemObject(bufferB);
- 
+
    free(clDevices);
-   free(clMatrixMul);
    clReleaseContext(clGPUContext);
    clReleaseKernel(clKernel);
    clReleaseProgram(clProgram);
    clReleaseCommandQueue(clCommandQue);
 
+   free(A);
+   free(B);
+   free(C);
+   
+ 
 }
