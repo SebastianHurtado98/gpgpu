@@ -3,21 +3,17 @@
 #include <stdio.h>
 #include <math.h>
  
-void randomInit(float* data, int size)
+void randomElements(float* data, int size)
 {
    for (int i = 0; i < size; ++i)
-   data[i] = 10;
+   data[i] = rand() % 100;
 }
 
 int main()
 {
-   float* matrixA = NULL;
-   float* matrixB = NULL;
-   float* matrixC = NULL;
-   
-
-   int size = 1024;
-   int totalElements = 1024*1024;
+   int size;
+   scanf("%d", &size);
+   int totalElements = size*size;
 
    unsigned int sizeA = size * size;
    unsigned int memSizeA = sizeof(float) * sizeA;
@@ -27,8 +23,8 @@ int main()
    unsigned int memSizeB = sizeof(float) * sizeB;
    float* B = (float*) malloc(memSizeB);
 
-   randomInit(A, sizeA);
-   randomInit(B, sizeB);
+   randomElements(A, sizeA);
+   randomElements(B, sizeB);
 
  
    unsigned int sizeC = size * size;
@@ -127,8 +123,7 @@ int main()
               bufferC, CL_TRUE, 0, memSizeC, 
               C, 0, NULL, NULL);
 
- 
-   // 9. print out the results
+
    printf("\n\nMatrix C (Results)\n");
    for(int i = 0; i < sizeC; i++)
    {

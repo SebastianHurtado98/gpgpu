@@ -3,13 +3,21 @@
 #include <stdbool.h>
 // OpenCL includes
 
+void randomElements(float* data, int size)
+{
+   for (int i = 0; i < size; ++i)
+   data[i] = rand() % 100;
+}
+
+
 
 int main(){
 	float *matrixA = NULL;
 	float *matrixB = NULL;
 	float *matrixC = NULL;
     
-    int size = 32;
+    int size;
+    scanf("%d", &size);
 
 	int totalElements = size*size;
 
@@ -19,10 +27,8 @@ int main(){
 	matrixB = (float*)malloc(datasizeTotal);
 	matrixC = (float*)malloc(datasizeTotal);
 
-	for(int i = 0; i < totalElements; i++) {
-	matrixA[i] = 10;
-	matrixB[i] = 10;
-	}
+	randomElements(matrixA, totalElements);
+	randomElements(matrixB, totalElements);
     float count;
 
 	for(int i = 0; i < size; i++){
