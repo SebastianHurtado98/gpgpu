@@ -4,6 +4,16 @@
 
 using namespace std;
 
+void multi(int N, std::vector<std::vector<int>> A, std::vector<std::vector<int>> B, std::vector<std::vector<int>> &C) {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            for (int k = 0; k < N; k++) {
+                C[i][j] += A[i][k] * B[k][j];
+            }
+        }
+    }
+}
+
 int main() {
     int N;
     cin >> N;
@@ -21,14 +31,5 @@ int main() {
         }
     }
 
-    int k;
-
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < N; j++) {
-            for (k = 0; k < N; k++) {
-                C[i][j] += A[i][k] * B[k][j];
-            }
-        }
-    }
-
+    multi(N, A, B, C);
 }
