@@ -24,6 +24,7 @@ def main():
     print('Result:')
 
     for input in inputs:
+        print('Input: ' + str(input) + '\n')
         naive[input] = takeTime('./matrixMultA', input)
         vector[input] = takeTime('./matrixMultB', input)
         matrix[input] = takeTime('./matrixMultC', input)
@@ -35,7 +36,6 @@ def main():
     )
     plt.savefig('plot.png')
     print(' Image saved in plot.png')
-
 
 if __name__ == '__main__':
     main()
