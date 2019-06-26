@@ -13,8 +13,6 @@ def takeTime(program, input):
     return (end - start).total_seconds()
 
 
-
-
 def main():
     naive = {}
     vector = {}
