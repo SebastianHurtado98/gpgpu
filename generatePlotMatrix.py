@@ -15,9 +15,10 @@ def takeTime(program, input):
 
 
 def main():
-    naive = {}
-    vector = {}
-    matrix = {}
+    CPU = {}
+    Thread = {}
+    OpenCL = {}
+    CUDA = {}
 
     inputs = [32, 64, 128, 256, 512, 1024, 2048, 4096]
 
@@ -25,14 +26,16 @@ def main():
 
     for input in inputs:
         print('Input: ' + str(input) + '\n')
-        naive[input] = takeTime('./matrixMultA', input)
-        vector[input] = takeTime('./matrixMultB', input)
-        matrix[input] = takeTime('./matrixMultC', input)
+        CPU[input] = takeTime('./matrixMultCPU', input)
+        #naive[input] = takeTime('./matrixMultA', input)
+        #vector[input] = takeTime('./matrixMultB', input)
+        OpenCL[input] = takeTime('./matrixMultC', input)
 
     plt.plot(
-        naive.keys(), naive.values(),
-        vector.keys(), vector.values(),
-        matrix.keys(), matrix.values(),
+        #naive.keys(), naive.values(),
+        #vector.keys(), vector.values(),
+        CPU.keys(), CPU.values(),
+        OpenCL.keys(), OpenCL.values()
     )
     plt.savefig('plot.png')
     print(' Image saved in plot.png')
