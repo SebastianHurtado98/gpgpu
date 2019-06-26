@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
 import subprocess
 import random
+import struct
 import matplotlib.pyplot as plt
 
 
 def takeTime(program, input):
     start = datetime.now()
-    subprocess.run(program, input=input)
+    subprocess.run(program, input=bytes([input]))
     end = datetime.now()
     return (end - start).total_seconds()
 
