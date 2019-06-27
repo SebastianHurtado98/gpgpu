@@ -1,8 +1,7 @@
 #include <bits/stdc++.h> 
+#include <SFML/Graphics.hpp>
 
 #define MAX_THREAD 4 
-
-
 
 float *matrixA = NULL;
 float *matrixB = NULL;
@@ -86,5 +85,13 @@ int main()
       if(((i + 1) % size) == 0) printf("\n");
    }
    printf("\n");
+
+
+
+
+
+
+
+   
     return 0; 
 } 

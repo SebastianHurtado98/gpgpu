@@ -5,25 +5,104 @@
 #include <cmath>
 #include <vector>
 #include <random>
+#include <bits/stdc++.h> 
+
+
+#define MAX_THREAD 4 
+
+float *matrixA = NULL;
+float *matrixB = NULL;
+int *matrixC = NULL;
+int iterations = 100;
+
+int fixer = 0; 
+int size;
+
+void elementsA(float* data, int size)
+{
+
+    int half = size/2;
+    for (int j = 0; j < size; j ++){
+        for (int i = 0; i<half; i++) data[(j * size) + i] = float(((-2.0) *(half-i))/half);
+        for (int i = half; i < size; i++) data[(j * size) + i] = float((2.0 *(i-half))/half);
+    }
+}
+void elementsB(float* data, int size)
+{
+
+    int half = size/2;
+    for (int j = 0; j < size; j ++){
+        for (int i = 0; i<half; i++) data[(i * size) + j] = float((2.0 *(half-i))/half);
+        for (int i = half; i < size; i++) data[(i * size) + j] = float(((-2.0) *(i-half))/half);
+    }
+}
+
+
+void* Mandelbrot(void* arg) 
+{ 
+    int core = fixer++; 
+    int totalSize = size * size;
+    int Z = 0;
+    int C;
+
+    for (int i = core * totalSize / 4; i < (core + 1) * totalSize / 4; i++)  {
+        Z = 0;
+        C = (matrixA[i] * matrixA[i]) + (matrixB[i] * matrixB[i]);
+        for (int j = 0; j < iterations; j++){
+            Z = (Z*Z) + C;
+        }
+        if ( Z > 2 ) matrixC[i] = 1;
+        else matrixC[i] = 0;
+    }
+} 
+
+
 
 int main()
 {
-    const int window_width = 512;
-    const int window_height = 512;
-    int size = window_height;
-    const int totalSize = window_height * window_width;
+    int size = 512;
+
+	int totalElements = size*size;
+
+	size_t datasizeTotal = sizeof(float)*totalElements;
+
+	matrixA = (float*)malloc(datasizeTotal);
+	matrixB = (float*)malloc(datasizeTotal);
+	matrixC = (int*)malloc(datasizeTotal);
+
+	elementsA(matrixA, size);
+	elementsB(matrixB, size);
+  
+
+    pthread_t threads[MAX_THREAD]; 
+  
+    for (int i = 0; i < MAX_THREAD; i++) { 
+        int* p; 
+        pthread_create(&threads[i], NULL, Mandelbrot, (void*)(p)); 
+    } 
+  
+
+    for (int i = 0; i < MAX_THREAD; i++)  
+        pthread_join(threads[i], NULL);     
+
+    const int totalSize = totalElements;
     const int bpp = 32;
+    
+      printf("\n\nMatrix C: \n");
+   for(int i = 0; i < totalElements; i++)
+   {
+      printf("%d ", matrixC[i]);
+      if(((i + 1) % size) == 0) printf("\n");
+   }
 
-    sf::RenderWindow window(sf::VideoMode(window_width, window_height, bpp), "Mandelbrot");
+    sf::RenderWindow window(sf::VideoMode(size, size, bpp), "Mandelbrot");
     window.setVerticalSyncEnabled(true);
-
-    sf::Vector2f direction(10.0f, 10.0f);
 
 
     std::vector<sf::CircleShape> points;
 
-    for (int i=0; i<window_width; i++){
-        for(int j = 0; j < window_height; j++)
+    for (int i=0; i<size; i++){
+        for(int j = 0; j < size; j++)
         {
             sf::CircleShape ball(1);
             ball.setFillColor(sf::Color::White);
@@ -32,26 +111,6 @@ int main()
             points.push_back(ball);
         }
     }
-
-
-    std::vector<float> positionx;
-    std::vector<float> positiony;    
-    std::vector<float> velox;
-    std::vector<float> veloy;
-
-    for (int i=0; i<totalSize; i++) {
-        window.draw(points[i]);
-        positionx.push_back(points[i].getPosition().x);
-        positiony.push_back(points[i].getPosition().y);
-        velox.push_back(1);
-        veloy.push_back(1);
-    }
-
-    std::vector<float> velocity(totalSize);
-    for (int i = 0; i < totalSize; i++) {
-        velocity[i] = std::sqrt(velox[i] * velox[i] + veloy[i] * veloy[i]);
-    }
-
 
     sf::Clock clock;
     sf::Time elapsed = clock.restart();
@@ -71,13 +130,10 @@ int main()
 
         window.clear();
         for (int i=0; i<totalSize; i++) {
-            int random = std::rand()%2;
-            if(random) points[i].setFillColor(sf::Color::Black);
-            else points[i].setFillColor(sf::Color::White);
-            window.draw(points[i]);
+                if(matrixC[i] == 1) points[i].setFillColor(sf::Color::Black);
+                else points[i].setFillColor(sf::Color::White);
+                window.draw(points[i]);
         }
-
-
         window.display();
     }
 
