@@ -1,151 +1,265 @@
-#include <CL/cl.h>
-#include <stdlib.h>
+
 #include <stdio.h>
-#include <math.h>
- 
-void randomElements(float* data, int size)
+#include <stdlib.h>
+#include <stdbool.h>
+#include <CL/cl.h>
+
+   char *programSource = "__kernel                                            \n"
+         "void JuliaSet(__global float *A,                        \n"
+         "            __global float *B,                        \n"
+         "            __global int *C,                        \n"
+         "            float seed)                             \n"
+         "{                                                   \n"
+         "   int idx = get_global_id(0);                      \n"
+         "   float c; float Z;                                  \n"
+         "   c = (A[idx]*A[idx]) + (B[idx]*B[idx]);           \n"
+         "   Z = seed;                                        \n"
+         "   for (int j = 0; j <10; j++){                     \n"
+         "   Z = (Z*Z) + c;                                   \n"
+         "   }                                                \n"
+         "   if(Z>2) C[idx] = 1;                              \n"
+         "   else C[idx] = 0;                                 \n"
+         "}                                                   \n";
+;
+
+void elementsA(float* data, int size)
 {
-   for (int i = 0; i < size; ++i)
-   data[i] = rand() % 100;
+
+    int half = size/2;
+    for (int j = 0; j < size; j ++){
+        for (int i = 0; i<half; i++) data[(j * size) + i] = float(((-2.0) *(half-i))/half);
+        for (int i = half; i < size; i++) data[(j * size) + i] = float((2.0 *(i-half))/half);
+    }
+}
+void elementsB(float* data, int size)
+{
+
+    int half = size/2;
+    for (int j = 0; j < size; j ++){
+        for (int i = 0; i<half; i++) data[(i * size) + j] = float((2.0 *(half-i))/half);
+        for (int i = half; i < size; i++) data[(i * size) + j] = float(((-2.0) *(i-half))/half);
+    }
 }
 
-int main()
-{
-   int size;
-   scanf("%d", &size);
-   int totalElements = size*size;
+int main() {
 
-   unsigned int sizeA = size * size;
-   unsigned int memSizeA = sizeof(float) * sizeA;
-   float* A = (float*) malloc(memSizeA);
- 
-   unsigned int sizeB = size * size;
-   unsigned int memSizeB = sizeof(float) * sizeB;
-   float* B = (float*) malloc(memSizeB);
+    float *matrixA = NULL;
+	float *matrixB = NULL;
+	int *matrixC = NULL;
+    int size;
+    scanf("%d", &size);
+    float real = 0;
+    float im  = 0;
+    float seed = (real * real) + (im * im);
+	int totalElements = size*size;
 
-   randomElements(A, sizeA);
-   randomElements(B, sizeB);
+	size_t datasizeTotal = sizeof(float)*totalElements;
 
- 
-   unsigned int sizeC = size * size;
-   unsigned int memSizeC = sizeof(float) * sizeC;
-   float* C = (float*) malloc(memSizeC);
- 
-   cl_context clGPUContext;
-   cl_command_queue clCommandQue;
-   cl_program clProgram;
-   cl_kernel clKernel;
-  
-   size_t dataBytes;
-   size_t kernelLength;
-   cl_int errcode;
- 
-   cl_mem bufferA;
-   cl_mem bufferB;
-   cl_mem bufferC;
- 
-   clGPUContext = clCreateContextFromType(0, 
-                   CL_DEVICE_TYPE_GPU, 
-                   NULL, NULL, &errcode);
- 
-   errcode = clGetContextInfo(clGPUContext, 
-              CL_CONTEXT_DEVICES, 0, NULL, 
-              &dataBytes);
-   cl_device_id *clDevices = (cl_device_id *)
-              malloc(dataBytes);
-   errcode |= clGetContextInfo(clGPUContext, 
-              CL_CONTEXT_DEVICES, dataBytes, 
-              clDevices, NULL);
+	matrixA = (float*)malloc(datasizeTotal);
+	matrixB = (float*)malloc(datasizeTotal);
+	matrixC = (int*)malloc(datasizeTotal);
 
- 
-   clCommandQue = clCreateCommandQueue(clGPUContext, 
-                  clDevices[0], 0, &errcode);
-
-   bufferC = clCreateBuffer(clGPUContext, 
-          CL_MEM_READ_WRITE, 
-          memSizeC, NULL, &errcode);
-   bufferA = clCreateBuffer(clGPUContext, 
-          CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
-          memSizeA, A, &errcode);
-   bufferB = clCreateBuffer(clGPUContext, 
-          CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
-          memSizeB, B, &errcode);
-
-   char *clMatrixMul = "__kernel void matrixMul(__global float* C,"
-          "__global float* A, "
-          "__global float* B, "
-          "int wA, int wB){"
-   "int tx = get_global_id(0);"
-   "int ty = get_global_id(1);"
-   "float value = 0;"
-   "for (int k = 0; k < wA; ++k){"
-      "float elementA = A[ty * wA + k];"
-      "float elementB = B[k * wB + tx];"
-      "value += elementA * elementB;}"
-   "C[ty * wA + tx] = value;}" ;
-
-   clProgram = clCreateProgramWithSource(clGPUContext, 
-                1, (const char **)&clMatrixMul, 
-                &kernelLength, &errcode);
-
-   errcode = clBuildProgram(clProgram, 0, 
-              NULL, NULL, NULL, NULL);
-
- 
-   clKernel = clCreateKernel(clProgram, 
-               "matrixMul", &errcode);
-
- 
- 
-   size_t localWorkSize[2], globalWorkSize[2];
-   
-   errcode = clSetKernelArg(clKernel, 0, 
-              sizeof(cl_mem), (void *)&bufferC);
-   errcode |= clSetKernelArg(clKernel, 1, 
-              sizeof(cl_mem), (void *)&bufferA);
-   errcode |= clSetKernelArg(clKernel, 2, 
-              sizeof(cl_mem), (void *)&bufferB);
-   errcode |= clSetKernelArg(clKernel, 3, 
-              sizeof(int), (void *)&size);
-   errcode |= clSetKernelArg(clKernel, 4, 
-              sizeof(int), (void *)&size);
- 
-   localWorkSize[0] = 16;
-   localWorkSize[1] = 16;
-   globalWorkSize[0] = size;
-   globalWorkSize[1] = size;
- 
-   errcode = clEnqueueNDRangeKernel(clCommandQue, 
-              clKernel, 2, NULL, globalWorkSize, 
-              localWorkSize, 0, NULL, NULL);
- 
-   errcode = clEnqueueReadBuffer(clCommandQue, 
-              bufferC, CL_TRUE, 0, memSizeC, 
-              C, 0, NULL, NULL);
+	elementsA(matrixA, size);
+	elementsA(matrixB, size);
 
 
-   printf("\n\nMatrix C (Results)\n");
-   for(int i = 0; i < sizeC; i++)
+    cl_int status;  
+     
+    
+    cl_uint numPlatforms = 0;
+    cl_platform_id *platforms = NULL;
+
+    status = clGetPlatformIDs(0, NULL, &numPlatforms);
+ 
+
+    platforms =   
+        (cl_platform_id*)malloc(
+            numPlatforms*sizeof(cl_platform_id));
+ 
+
+    status = clGetPlatformIDs(numPlatforms, platforms, 
+                NULL);
+
+    
+    cl_uint numDevices = 0;
+    cl_device_id *devices = NULL;
+    status = clGetDeviceIDs(
+        platforms[0], 
+        CL_DEVICE_TYPE_ALL, 
+        0, 
+        NULL, 
+        &numDevices);
+
+
+    devices = 
+        (cl_device_id*)malloc(
+            numDevices*sizeof(cl_device_id));
+
+    status = clGetDeviceIDs(
+        platforms[0], 
+        CL_DEVICE_TYPE_ALL,        
+        numDevices, 
+        devices, 
+        NULL);
+
+
+    cl_context context = NULL;
+
+    context = clCreateContext(
+        NULL, 
+        numDevices, 
+        devices, 
+        NULL, 
+        NULL, 
+        &status);
+
+    
+    cl_command_queue cmdQueue;
+
+    cmdQueue = clCreateCommandQueue(
+        context, 
+        devices[0], 
+        0, 
+        &status);
+
+    cl_mem bufferA; 
+    cl_mem bufferB;
+    cl_mem bufferC;  
+
+
+    bufferA = clCreateBuffer(
+        context, 
+        CL_MEM_READ_ONLY,                         
+        datasizeTotal, 
+        NULL, 
+        &status);
+
+    bufferB = clCreateBuffer(
+        context, 
+        CL_MEM_READ_ONLY,                         
+        datasizeTotal, 
+        NULL, 
+        &status);
+
+    bufferC = clCreateBuffer(
+        context, 
+        CL_MEM_WRITE_ONLY,                 
+        datasizeTotal, 
+        NULL, 
+        &status);
+
+
+    cl_program program = clCreateProgramWithSource(
+        context, 
+        1, 
+        (const char**)&programSource,                                 
+        NULL, 
+        &status);
+
+    status = clBuildProgram(
+        program, 
+        numDevices, 
+        devices, 
+        NULL, 
+        NULL, 
+        NULL);
+
+    cl_kernel kernel = NULL;
+
+    kernel = clCreateKernel(program, "JuliaSet", &status);
+			
+        status = clEnqueueWriteBuffer(
+            cmdQueue, 
+            bufferA, 
+            CL_FALSE, 
+            0, 
+            datasizeTotal,                         
+            matrixA, 
+            0, 
+            NULL, 
+            NULL);
+        
+        status = clEnqueueWriteBuffer(
+            cmdQueue, 
+            bufferB, 
+            CL_FALSE, 
+            0, 
+            datasizeTotal,                                  
+            matrixB, 
+            0, 
+            NULL, 
+            NULL);
+
+        status  = clSetKernelArg(
+            kernel, 
+            0, 
+            sizeof(cl_mem), 
+            &bufferA);
+        status |= clSetKernelArg(
+            kernel, 
+            1, 
+            sizeof(cl_mem), 
+            &bufferB);
+        status |= clSetKernelArg(
+            kernel, 
+            2, 
+            sizeof(cl_mem), 
+            &bufferC);
+         status |= clSetKernelArg(
+            kernel, 
+            3, 
+            sizeof(float), 
+            &seed);
+
+        size_t globalWorkSize[1];    
+        globalWorkSize[0] = totalElements;
+
+        status = clEnqueueNDRangeKernel(
+            cmdQueue, 
+            kernel, 
+            1, 
+            NULL, 
+            globalWorkSize, 
+            NULL, 
+            0, 
+            NULL, 
+            NULL);
+
+
+        clEnqueueReadBuffer(
+            cmdQueue, 
+            bufferC, 
+            CL_TRUE, 
+            0, 
+            datasizeTotal, 
+            matrixC, 
+            0, 
+            NULL, 
+            NULL);
+
+
+   printf("\n\nMatrix C: \n");
+   for(int i = 0; i < totalElements; i++)
    {
-      printf("%f ", C[i]);
+      printf("%d ", matrixC[i]);
       if(((i + 1) % size) == 0) printf("\n");
    }
    printf("\n");
-
    
-   clReleaseMemObject(bufferA);
-   clReleaseMemObject(bufferC);
-   clReleaseMemObject(bufferB);
 
-   free(clDevices);
-   clReleaseContext(clGPUContext);
-   clReleaseKernel(clKernel);
-   clReleaseProgram(clProgram);
-   clReleaseCommandQueue(clCommandQue);
+    clReleaseKernel(kernel);
+    clReleaseProgram(program);
+    clReleaseCommandQueue(cmdQueue);
+    clReleaseMemObject(bufferA);
+    clReleaseMemObject(bufferB);
+    clReleaseMemObject(bufferC);
+    clReleaseContext(context);
 
-   free(A);
-   free(B);
-   free(C);
-   
- 
+    free(matrixA);
+    free(matrixB);
+    free(matrixC);
+    free(platforms);
+    free(devices);	
+
 }
+

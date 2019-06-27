@@ -9,6 +9,8 @@ int iterations = 10;
 
 int fixer = 0; 
 int size;
+float real;
+float im;
 
 void elementsA(float* data, int size)
 {
@@ -30,16 +32,17 @@ void elementsB(float* data, int size)
 }
 
   
-void* Mandelbrot(void* arg) 
+void* JuliaSet(void* arg) 
 { 
     int core = fixer++; 
     int totalSize = size * size;
-    int Z = 0;
-    int C;
+    float seed = (real * real) + (im * im);
+    float Z;
+    float C;
 
     for (int i = core * totalSize / 4; i < (core + 1) * totalSize / 4; i++)  {
-        Z = 0;
         C = (matrixA[i] * matrixA[i]) + (matrixB[i] * matrixB[i]);
+        Z = seed;
         for (int j = 0; j < iterations; j++){
             Z = (Z*Z) + C;
         }
@@ -52,6 +55,9 @@ int main()
 { 
 
     scanf("%d", &size);
+
+    real = -0.3233;
+    im = 0.612223;
 
 	int totalElements = size*size;
 
@@ -69,7 +75,7 @@ int main()
   
     for (int i = 0; i < MAX_THREAD; i++) { 
         int* p; 
-        pthread_create(&threads[i], NULL, Mandelbrot, (void*)(p)); 
+        pthread_create(&threads[i], NULL, JuliaSet, (void*)(p)); 
     } 
   
 
