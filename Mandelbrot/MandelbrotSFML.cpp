@@ -2,13 +2,12 @@
 #include <cmath>
 #include <random>
 
-const int IMAGE_WIDTH = 1000;
-const int IMAGE_HEIGHT = 600;
-double zoom = 0.004; // allow the user to zoom in and out...
-double offsetX = -0.7; // and move around
+const int IMAGE_WIDTH = 512;
+const int IMAGE_HEIGHT = 512;
+double zoom = 0.004;
+double offsetX = -0.7;
 double offsetY = 0.0;
-const int MAX = 100; // maximum number of iterations for mandelbrot()
-                     // don't increase MAX or the colouring will look strange
+const int MAX = 100;
 
 int mandelbrot(double, double, int);
 sf::Color getColor(int);
@@ -22,7 +21,7 @@ int main() {
     sf::Texture texture;
     sf::Sprite sprite;
 
-    bool stateChanged = true; // track whether the image needs to be regenerated
+    bool stateChanged = true; 
 
     while (window.isOpen()) {
         sf::Event event;
@@ -32,7 +31,7 @@ int main() {
                     window.close();
                     break;
                 case sf::Event::KeyPressed:
-                    stateChanged = true; // image needs to be recreated when the user changes zoom or offset
+                    stateChanged = true; 
                     switch (event.key.code) {
                         case sf::Keyboard::Escape:
                             window.close();
@@ -63,15 +62,14 @@ int main() {
         }
 
 
-        if (stateChanged) { // only generate a new image if something has changed, to avoid unnecessary lag
+        if (stateChanged) {
 
             for (int x = 0; x < IMAGE_WIDTH; x++) {
                 for (int y = 0; y < IMAGE_HEIGHT; y++) {
-                    // convert x and y to the appropriate complex number
                     double real = (x - IMAGE_WIDTH / 2.0) * zoom + offsetX;
                     double imag = (y - IMAGE_HEIGHT / 2.0) * zoom + offsetY;
                     int value = mandelbrot(real, imag, MAX);
-                    image.setPixel(x, y, getColor(value));
+                    image.setPixel(x, y, sf::Color(value, value, value));
                 }
             }
 
@@ -101,51 +99,16 @@ int mandelbrot(double startReal, double startImag, int maximum) {
         nextRe = pow(zReal, 2.0) - pow(zImag, 2.0) + startReal;
         zImag = 2.0 * zReal * zImag + startImag;
         zReal = nextRe;
-        if (zReal == startReal && zImag == startImag) { // a repetition indicates that the point is in the Mandelbrot set
-            return -1; // points in the Mandelbrot set are represented by a return value of -1
+        if (zReal == startReal && zImag == startImag) { 
+            return 0;
         }
         counter += 1;
     }
 
     if (counter >= maximum) {
-        return -1; // -1 is used here to indicate that the point lies within the Mandelbrot set
+        return 0;
     } else {
-        return counter; // returning the number of iterations allows for colouring
+        return 255; 
     }
 }
 
-sf::Color getColor(int iterations) {
-    int r, g, b;
-
-    if (iterations == -1) {
-        r = 0;
-        g = 0;
-        b = 0;
-    } else if (iterations == 0) {
-        r = 255;
-        g = 0;
-        b = 0;
-    } else {
-        // colour gradient:      Red -> Blue -> Green -> Red -> Black
-        // corresponding values:  0  ->  16  ->  32   -> 64  ->  127 (or -1)
-        if (iterations < 16) {
-            r = 16 * (16 - iterations);
-            g = 0;
-            b = 16 * iterations - 1;
-        } else if (iterations < 32) {
-            r = 0;
-            g = 16 * (iterations - 16);
-            b = 16 * (32 - iterations) - 1;
-        } else if (iterations < 64) {
-            r = 8 * (iterations - 32);
-            g = 8 * (64 - iterations) - 1;
-            b = 0;
-        } else { // range is 64 - 127
-            r = 255 - (iterations - 64) * 4;
-            g = 0;
-            b = 0;
-        }
-    }
-
-    return sf::Color(r, g, b);
-}
