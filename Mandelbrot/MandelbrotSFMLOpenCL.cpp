@@ -13,6 +13,26 @@ float offsetX = -0.7;
 float offsetY = 0.0;
 const int MAX = 100;
 
+   char *clMandelbrot = "__kernel void Mandelbrot(__global int* values,"
+          "int zoom, "
+          "int offsetX, "
+          "int offsetY, "
+          "int maximum, int size){"
+        "float startReal = (tx - size / 2.0) * zoom + offsetX;"
+        "float startImag = (ty - size / 2.0) * zoom + offsetY;"
+        "float zReal = startReal;"
+        "float zImag = startImag;"
+        "float nextRe;"
+        "for (int i = 0; i<maximum; i++){"
+        "    nextRe = (zReal*zReal) - (zImag*zImag) + startReal;"
+        "    zImag = 2.0 * zReal * zImag + startImag;"
+        "    zReal = nextRe;}"
+        "if ( ((zReal*zReal) + (zImag*zImag)) <= 4.0)"
+        "{values[ty * size + tx] = 0;}"
+        "else" 
+        "{values[ty * size + tx] = 255;}";
+
+
 int mandelbrot(float, float, int);
 
 int main() {
@@ -202,28 +222,7 @@ int main()
           CL_MEM_READ_WRITE, 
           mem, NULL, &errcode);
 
-   char *clMandelbrot = "__kernel void Mandelbrot(__global int* values,"
-          "int zoom, "
-          "int offsetX, "
-          "int offsetY, "
-          "int maximum, int size){"
 
-        float startReal = (tx - size / 2.0) * zoom + offsetX;
-        float startImag = (ty - size / 2.0) * zoom + offsetY;
-        float zReal = startReal;
-        float zImag = startImag;
-        float nextRe;
-
-        for (int i = 0; i<maximum; i++){
-            nextRe = (zReal*zReal) - (zImag*zImag) + startReal;
-            zImag = 2.0 * zReal * zImag + startImag;
-            zReal = nextRe;
-        }
-
-        if ( ((zReal*zReal) + (zImag*zImag)) <= 4.0) 
-        {values[ty * size + tx] = 0;}
-        else 
-        {values[ty * size + tx] = 255;}
 
     //MANDELBROT END
 
