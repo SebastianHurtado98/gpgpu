@@ -1,36 +1,19 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <random>
-#include <CL/cl.h>
+//#include <CL/cl.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
  
- const char* programSource =
-"__kernel                                            \n"
-"void vectMult(__global float *A,                        \n"
-"            __global float *B,                        \n"
-"            __global float *C)                        \n"
-"{                                                   \n"
-"                                                    \n"
-"   // Get the work-item’s unique ID                 \n"
-"   int idx = get_global_id(0);                      \n"
-"                                                    \n"
-"   // Add the corresponding locations of            \n"
-"   // 'A' and 'B', and store the result in 'C'.     \n"
-"   C[idx] = A[idx] * B[idx];                        \n"
-"}                                                   \n"
-;
-
 const int IMAGE_WIDTH = 512;
 const int IMAGE_HEIGHT = 512;
-double zoom = 0.004;
-double offsetX = -0.7;
-double offsetY = 0.0;
+float zoom = 0.004;
+float offsetX = -0.7;
+float offsetY = 0.0;
 const int MAX = 100;
 
-int mandelbrot(double, double, int);
-sf::Color getColor(int);
+int mandelbrot(float, float, int);
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(IMAGE_WIDTH, IMAGE_HEIGHT), "Mandelbrot");
@@ -93,11 +76,22 @@ int main() {
         if (stateChanged) {
 
             for (int i = 0; i < IMAGE_HEIGHT * IMAGE_WIDTH; i++){
-                int x = int(i/IMAGE_WIDTH);
-                int y = int(i%IMAGE_WIDTH);
-                double real = (x - IMAGE_WIDTH / 2.0) * zoom + offsetX;
-                double imag = (y - IMAGE_HEIGHT / 2.0) * zoom + offsetY;
-                value[i] = mandelbrot(real, imag, MAX);
+                int tx = int(i/IMAGE_WIDTH);
+                int ty = int(i%IMAGE_WIDTH);
+                                float startReal = (tx - 512 / 2.0) * zoom + offsetX;
+                float startImag = (ty - 512 / 2.0) * zoom + offsetY;
+
+                    float zReal = startReal;
+    float zImag = startImag;
+    float nextRe;
+
+    for (int i = 0; i<MAX; i++){
+        nextRe = (zReal*zReal) - (zImag*zImag) + startReal;
+        zImag = 2.0 * zReal * zImag + startImag;
+        zReal = nextRe;
+    }
+    if ( ((zReal*zReal) + (zImag*zImag)) <= 4.0) {value[i] = 0;}
+    else {value[i] = 255;}
             }
 
             for (int i = 0; i < IMAGE_HEIGHT * IMAGE_WIDTH; i++){
@@ -105,8 +99,6 @@ int main() {
                 int y = int(i%IMAGE_WIDTH);
                 image.setPixel(x, y, sf::Color(value[i], value[i], value[i]));
             }
-
-
 
 
             /*
@@ -135,12 +127,22 @@ int main() {
     return 0;
 }
 
-int mandelbrot(double startReal, double startImag, int maximum) {
-    int counter = 0;
-    double zReal = startReal;
-    double zImag = startImag;
-    double nextRe;
 
+/*
+int mandelbrot(float startReal, float startImag, int maximum) {
+    int counter = 0;
+    float zReal = startReal;
+    float zImag = startImag;
+    float nextRe;
+
+    for (int i = 0; i<maximum; i++){
+        nextRe = pow(zReal, 2.0) - pow(zImag, 2.0) + startReal;
+        zImag = 2.0 * zReal * zImag + startImag;
+        zReal = nextRe;
+    }
+    if (pow(zReal, 2.0) + pow(zImag, 2.0) <= 4.0) return 0;
+    return 255;
+//WHILE no va si ya tienes el for
     while (pow(zReal, 2.0) + pow(zImag, 2.0) <= 4.0 && counter <= maximum) {
         nextRe = pow(zReal, 2.0) - pow(zImag, 2.0) + startReal;
         zImag = 2.0 * zReal * zImag + startImag;
@@ -156,250 +158,140 @@ int mandelbrot(double startReal, double startImag, int maximum) {
     } else {
         return 255; 
     }
+
 }
+*/
 
 /*
 
-int main() {
+int main()
+{
 
-    int *value = NULL;
-	int totalElements = 512*512;
-
-	size_t datasizeTotal = sizeof(float)*totalElements;
-
-	value = (float*)malloc(datasizeTotal);
-
-    float *A = NULL; 
-    float *B = NULL; 
-    float *C = NULL;
-    
-
-
-    
-    size_t datasize = sizeof(float)*size;
-
-    A = (float*)malloc(datasize);
-    B = (float*)malloc(datasize);
-    C = (float*)malloc(datasize);
-
-
-
-    cl_int status;  
-     
-    
-    cl_uint numPlatforms = 0;
-    cl_platform_id *platforms = NULL;
-
-    status = clGetPlatformIDs(0, NULL, &numPlatforms);
+   int mem = sizeof(int) * 512*512;
+   int* value = (int*) malloc(mem);
  
-
-    platforms =   
-        (cl_platform_id*)malloc(
-            numPlatforms*sizeof(cl_platform_id));
+   cl_context clGPUContext;
+   cl_command_queue clCommandQue;
+   cl_program clProgram;
+   cl_kernel clKernel;
+  
+   size_t dataBytes;
+   size_t kernelLength;
+   cl_int errcode;
  
+   cl_mem bufferValues;
+ 
+   clGPUContext = clCreateContextFromType(0, 
+                   CL_DEVICE_TYPE_GPU, 
+                   NULL, NULL, &errcode);
+ 
+   errcode = clGetContextInfo(clGPUContext, 
+              CL_CONTEXT_DEVICES, 0, NULL, 
+              &dataBytes);
+   cl_device_id *clDevices = (cl_device_id *)
+              malloc(dataBytes);
+   errcode |= clGetContextInfo(clGPUContext, 
+              CL_CONTEXT_DEVICES, dataBytes, 
+              clDevices, NULL);
 
-    status = clGetPlatformIDs(numPlatforms, platforms, 
-                NULL);
+ 
+   clCommandQue = clCreateCommandQueue(clGPUContext, 
+                  clDevices[0], 0, &errcode);
 
-    
-    cl_uint numDevices = 0;
-    cl_device_id *devices = NULL;
-    status = clGetDeviceIDs(
-        platforms[0], 
-        CL_DEVICE_TYPE_ALL, 
-        0, 
-        NULL, 
-        &numDevices);
+   bufferValues = clCreateBuffer(clGPUContext, 
+          CL_MEM_READ_WRITE, 
+          mem, NULL, &errcode);
 
+   char *clMandelbrot = "__kernel void Mandelbrot(__global int* values,"
+          "int zoom, "
+          "int offsetX, "
+          "int offsetY, "
+          "int maximum, int size){"
 
-    devices = 
-        (cl_device_id*)malloc(
-            numDevices*sizeof(cl_device_id));
+        float startReal = (tx - size / 2.0) * zoom + offsetX;
+        float startImag = (ty - size / 2.0) * zoom + offsetY;
+        float zReal = startReal;
+        float zImag = startImag;
+        float nextRe;
 
-    status = clGetDeviceIDs(
-        platforms[0], 
-        CL_DEVICE_TYPE_ALL,        
-        numDevices, 
-        devices, 
-        NULL);
-
-
-    cl_context context = NULL;
-
-    context = clCreateContext(
-        NULL, 
-        numDevices, 
-        devices, 
-        NULL, 
-        NULL, 
-        &status);
-
-    
-    cl_command_queue cmdQueue;
-
-    cmdQueue = clCreateCommandQueue(
-        context, 
-        devices[0], 
-        0, 
-        &status);
-
-    cl_mem bufferA; 
-    cl_mem bufferB;
-    cl_mem bufferC;  
-
-
-    bufferA = clCreateBuffer(
-        context, 
-        CL_MEM_READ_ONLY,                         
-        datasize, 
-        NULL, 
-        &status);
-
-    bufferB = clCreateBuffer(
-        context, 
-        CL_MEM_READ_ONLY,                         
-        datasize, 
-        NULL, 
-        &status);
-
-    bufferC = clCreateBuffer(
-        context, 
-        CL_MEM_WRITE_ONLY,                 
-        datasize, 
-        NULL, 
-        &status);
-
-
-    cl_program program = clCreateProgramWithSource(
-        context, 
-        1, 
-        (const char**)&programSource,                                 
-        NULL, 
-        &status);
-
-    status = clBuildProgram(
-        program, 
-        numDevices, 
-        devices, 
-        NULL, 
-        NULL, 
-        NULL);
-
-    cl_kernel kernel = NULL;
-
-    kernel = clCreateKernel(program, "vectMult", &status);
-
-
-    //Repetible:
-    for(int i = 0; i < size; i++){
-		for (int j = 0; j < size; j++){
-			for (int k = 0; k < size; k++){
-				A[k] = matrixA[(i*size) + k];
-				B[k] = matrixB[(k*size) + j];
-			}
-
-            
-			
-        status = clEnqueueWriteBuffer(
-            cmdQueue, 
-            bufferA, 
-            CL_FALSE, 
-            0, 
-            datasize,                         
-            A, 
-            0, 
-            NULL, 
-            NULL);
-        
-        status = clEnqueueWriteBuffer(
-            cmdQueue, 
-            bufferB, 
-            CL_FALSE, 
-            0, 
-            datasize,                                  
-            B, 
-            0, 
-            NULL, 
-            NULL);
-
-        status  = clSetKernelArg(
-            kernel, 
-            0, 
-            sizeof(cl_mem), 
-            &bufferA);
-        status |= clSetKernelArg(
-            kernel, 
-            1, 
-            sizeof(cl_mem), 
-            &bufferB);
-        status |= clSetKernelArg(
-            kernel, 
-            2, 
-            sizeof(cl_mem), 
-            &bufferC);
-
-        size_t globalWorkSize[1];    
-        globalWorkSize[0] = size;
-
-        status = clEnqueueNDRangeKernel(
-            cmdQueue, 
-            kernel, 
-            1, 
-            NULL, 
-            globalWorkSize, 
-            NULL, 
-            0, 
-            NULL, 
-            NULL);
-
-
-        clEnqueueReadBuffer(
-            cmdQueue, 
-            bufferC, 
-            CL_TRUE, 
-            0, 
-            datasize, 
-            C, 
-            0, 
-            NULL, 
-            NULL);
-
-        float count = 0;
-        for(int w = 0; w < size ; w++){
-            count = count + C[w];
+        for (int i = 0; i<maximum; i++){
+            nextRe = (zReal*zReal) - (zImag*zImag) + startReal;
+            zImag = 2.0 * zReal * zImag + startImag;
+            zReal = nextRe;
         }
 
-        matrixC[(i*size) + j] = count;
-		}
-	}
-    //fin de repetible
-    //AL FINAL!!
+        if ( ((zReal*zReal) + (zImag*zImag)) <= 4.0) 
+        {values[ty * size + tx] = 0;}
+        else 
+        {values[ty * size + tx] = 255;}
 
-   printf("\n\nMatrix C: \n");
-   for(int i = 0; i < totalElements; i++)
+    //MANDELBROT END
+
+   clProgram = clCreateProgramWithSource(clGPUContext, 
+                1, (const char **)&clMatrixMul, 
+                &kernelLength, &errcode);
+
+   errcode = clBuildProgram(clProgram, 0, 
+              NULL, NULL, NULL, NULL);
+
+ 
+   clKernel = clCreateKernel(clProgram, 
+               "matrixMul", &errcode);
+
+ 
+ 
+   size_t localWorkSize[2], globalWorkSize[2];
+   
+   errcode = clSetKernelArg(clKernel, 0, 
+              sizeof(cl_mem), (void *)&bufferC);
+   errcode |= clSetKernelArg(clKernel, 1, 
+              sizeof(cl_mem), (void *)&bufferA);
+   errcode |= clSetKernelArg(clKernel, 2, 
+              sizeof(cl_mem), (void *)&bufferB);
+   errcode |= clSetKernelArg(clKernel, 3, 
+              sizeof(int), (void *)&size);
+   errcode |= clSetKernelArg(clKernel, 4, 
+              sizeof(int), (void *)&size);
+ 
+   localWorkSize[0] = 16;
+   localWorkSize[1] = 16;
+   globalWorkSize[0] = size;
+   globalWorkSize[1] = size;
+ 
+   errcode = clEnqueueNDRangeKernel(clCommandQue, 
+              clKernel, 2, NULL, globalWorkSize, 
+              localWorkSize, 0, NULL, NULL);
+ 
+   errcode = clEnqueueReadBuffer(clCommandQue, 
+              bufferC, CL_TRUE, 0, memSizeC, 
+              C, 0, NULL, NULL);
+
+
+   printf("\n\nMatrix C (Results)\n");
+   for(int i = 0; i < sizeC; i++)
    {
-      printf("%f ", matrixC[i]);
+      printf("%f ", C[i]);
       if(((i + 1) % size) == 0) printf("\n");
    }
    printf("\n");
+
    
+   clReleaseMemObject(bufferA);
+   clReleaseMemObject(bufferC);
+   clReleaseMemObject(bufferB);
 
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    clReleaseCommandQueue(cmdQueue);
-    clReleaseMemObject(bufferA);
-    clReleaseMemObject(bufferB);
-    clReleaseMemObject(bufferC);
-    clReleaseContext(context);
+   free(clDevices);
+   clReleaseContext(clGPUContext);
+   clReleaseKernel(clKernel);
+   clReleaseProgram(clProgram);
+   clReleaseCommandQueue(clCommandQue);
 
-    free(A);
-    free(B);
-    free(C);
-    free(platforms);
-    free(devices);	
-
+   free(A);
+   free(B);
+   free(C);
+   
+ 
 }
-
 
 
  */
