@@ -14,7 +14,10 @@ __global__ void matrixMultiplicationKernel(float* A, float* B, float* C, int N) 
     float tmpSum = 0;
 
     if (ROW < N && COL < N) {
+<<<<<<< HEAD
         // each thread computes one element of the block sub-matrix
+=======
+>>>>>>> presentation
         for (int i = 0; i < N; i++) {
             tmpSum += A[ROW * N + i] * B[i * N + COL];
         }
@@ -25,8 +28,11 @@ __global__ void matrixMultiplicationKernel(float* A, float* B, float* C, int N) 
 
 void matrixMultiplication(float *A, float *B, float *C, int N){
 
+<<<<<<< HEAD
     // declare the number of blocks per grid and the number of threads per block
     // use 1 to 512 threads per block
+=======
+>>>>>>> presentation
     dim3 threadsPerBlock(N, N);
     dim3 blocksPerGrid(1, 1);
         if (N*N > 512){

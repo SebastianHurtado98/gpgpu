@@ -1,5 +1,9 @@
 *.ipch
+<<<<<<< HEAD
 matrix*
 testing/matrix*
 */*.out
 */matrix*
+=======
+*.vscode
+>>>>>>> presentation
