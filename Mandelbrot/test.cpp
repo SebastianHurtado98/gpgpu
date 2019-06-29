@@ -54,12 +54,11 @@ int main()
           CL_MEM_READ_WRITE, 
           memSizeC, NULL, &errcode);
 
-   char *clMatrixMul = "__kernel void matrixMul(__global float* C,"
-          "int wA, int wB){"
+   char *clMatrixMul = "__kernel void matrixMul(__global float* C, int size){"
    "int tx = get_global_id(0);"
    "int ty = get_global_id(1);"
    "float value = 0;"
-   "C[ty * wA + tx] = 1;}" ;
+   "C[ty * size + tx] = 1;}" ;
 
    clProgram = clCreateProgramWithSource(clGPUContext, 
                 1, (const char **)&clMatrixMul, 
@@ -78,9 +77,7 @@ int main()
    
    errcode = clSetKernelArg(clKernel, 0, 
               sizeof(cl_mem), (void *)&bufferC);
-   errcode |= clSetKernelArg(clKernel, 1, 
-              sizeof(int), (void *)&size);
-   errcode |= clSetKernelArg(clKernel, 2, 
+   errcode = clSetKernelArg(clKernel, 1, 
               sizeof(int), (void *)&size);
  
    localWorkSize[0] = 16;
