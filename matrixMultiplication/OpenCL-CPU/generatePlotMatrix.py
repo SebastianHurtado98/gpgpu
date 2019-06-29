@@ -33,18 +33,15 @@ def main():
         matrix[input] = takeTime('./matrixMultC', input)
         print('Input threads: ' + str(input) + '\n')
         threads[input] = takeTime('./matrixMultD', input)
-        print('Input CUDA: ' + str(input) + '\n')
-        CUDA[input] = takeTime('./matrixMultE', input)
 
     plt.plot(
         naive.keys(), naive.values(),
         vector.keys(), vector.values(),
         matrix.keys(), matrix.values(),
-        threads.keys(), threads.values(),
-        CUDA.keys(), CUDA.values()
+        threads.keys(), threads.values()
     )
     plt.savefig('plotMatrix.png')
-    print(' Image saved in plot.png')
+    print(' Image saved in plotA.png')
 
 
 if __name__ == '__main__':
