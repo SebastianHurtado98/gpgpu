@@ -62,8 +62,11 @@ int main()
    char *clMatrixMul = "__kernel void matrixMul(__global float* C, int zoom, float offsetX, float offsetY, int max, int size){"
    "int tx = get_global_id(0);"
    "int ty = get_global_id(1);"
-   "float value = 0;"
-   "C[ty * size + tx] = 1;}" ;
+   "int value = 0; "
+    "for (int i = 0; i<max; i++){"
+    "    value = value +1 ;}"
+    "if (value > 10) value = 1;"
+   "C[ty * size + tx] = value;}" ;
 
    clProgram = clCreateProgramWithSource(clGPUContext, 
                 1, (const char **)&clMatrixMul, 
