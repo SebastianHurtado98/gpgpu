@@ -59,17 +59,36 @@ int main()
           CL_MEM_READ_WRITE, 
           memSizeC, NULL, &errcode);
 
-   char *clMatrixMul = "__kernel void matrixMul(__global float* C, int zoom, float offsetX, float offsetY, int max, int size){"
+   char *clMandelbrot = "__kernel void Mandelbrot(__global float* C, float zoom, float offsetX, float offsetY, int max, int size){"
    "int tx = get_global_id(0);"
    "int ty = get_global_id(1);"
-   "int value = 0; "
-    "for (int i = 0; i<max; i++){"
-    "    value = value +1 ;}"
-    "if (value > 10) value = 1;"
-   "C[ty * size + tx] = value;}" ;
+    "float startReal = (ty - size / 2.0) * zoom + offsetX;"
+    "float startImag = (tx - size / 2.0) * zoom + offsetY;"
+    "float zReal = startReal;"
+    "float zImag = startImag;"
+    "float nextRe;"
+    "int counter = 0;"
+    "while (  ( (zReal*zReal) + (zImag*zImag) <= 4.0 ) && counter <= 100) {"
+    "nextRe = (zReal*zReal) - (zImag * zImag) + startReal;"
+    "zImag = 2.0 * zReal * zImag + startImag;"
+    "zReal = nextRe;"
+    "counter += 1;}"
+    "if (counter < max) {"
+    "    C[ty * size + tx] = 0;"
+    "} else {"
+    "    C[ty * size + tx] = 255;}}";
 
+/* 
+    "while (  ( (zReal*zReal) + (zImag*zImag) <= 4.0 ) && counter <= maximum) {"
+    "nextRe = (zReal*zReal) - (zImag * zImag) + startReal;"
+    "zImag = 2.0 * zReal * zImag + startImag;"
+    "zReal = nextRe;"
+    "counter += 1;"
+    "}"
+
+*/
    clProgram = clCreateProgramWithSource(clGPUContext, 
-                1, (const char **)&clMatrixMul, 
+                1, (const char **)&clMandelbrot, 
                 &kernelLength, &errcode);
 
    errcode = clBuildProgram(clProgram, 0, 
@@ -77,7 +96,7 @@ int main()
 
  
    clKernel = clCreateKernel(clProgram, 
-               "matrixMul", &errcode);
+               "Mandelbrot", &errcode);
 
  
  
@@ -86,7 +105,7 @@ int main()
    errcode = clSetKernelArg(clKernel, 0, 
               sizeof(cl_mem), (void *)&bufferC);
    errcode = clSetKernelArg(clKernel, 1, 
-              sizeof(int), (void *)&zoom);
+              sizeof(float), (void *)&zoom);
    errcode = clSetKernelArg(clKernel, 2, 
               sizeof(float), (void *)&offsetX);
    errcode = clSetKernelArg(clKernel, 3, 

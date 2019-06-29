@@ -10,7 +10,6 @@ double offsetY = 0.0;
 const int MAX = 100;
 
 int mandelbrot(double, double, int);
-sf::Color getColor(int);
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(IMAGE_WIDTH, IMAGE_HEIGHT), "Mandelbrot");

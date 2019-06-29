@@ -31,6 +31,7 @@ const int MAX = 100;
         "{values[ty * size + tx] = 0;}"
         "else" 
         "{values[ty * size + tx] = 255;}";
+        
 
 
 int mandelbrot(float, float, int);
