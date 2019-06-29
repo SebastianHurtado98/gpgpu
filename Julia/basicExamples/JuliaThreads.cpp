@@ -1,15 +1,16 @@
 #include <bits/stdc++.h> 
-#include <SFML/Graphics.hpp>
 
 #define MAX_THREAD 4 
 
 float *matrixA = NULL;
 float *matrixB = NULL;
 int *matrixC = NULL;
-int iterations = 100;
+int iterations = 10;
 
 int fixer = 0; 
 int size;
+float real;
+float im;
 
 void elementsA(float* data, int size)
 {
@@ -30,18 +31,18 @@ void elementsB(float* data, int size)
     }
 }
 
-
-//ints en Z y C generan mejores imagenes que float. No se por qué.  
-void* Mandelbrot(void* arg) 
+  
+void* JuliaSet(void* arg) 
 { 
     int core = fixer++; 
     int totalSize = size * size;
-    int Z = 0;
+    float seed = (real * real) + (im * im);
+    int Z;
     int C;
 
     for (int i = core * totalSize / 4; i < (core + 1) * totalSize / 4; i++)  {
-        Z = 0;
         C = (matrixA[i] * matrixA[i]) + (matrixB[i] * matrixB[i]);
+        Z = seed;
         for (int j = 0; j < iterations; j++){
             Z = (Z*Z) + C;
         }
@@ -51,9 +52,13 @@ void* Mandelbrot(void* arg)
 } 
 
 int main() 
-{ 
-
+{
+    printf("Inserte el N de la Matriz N*N \n");
     scanf("%d", &size);
+
+    printf("Inserte real e imaginario como semillas (-2 -> 2) \n");
+    scanf("%f", &real);
+    scanf("%f", &im);
 
 	int totalElements = size*size;
 
@@ -71,7 +76,7 @@ int main()
   
     for (int i = 0; i < MAX_THREAD; i++) { 
         int* p; 
-        pthread_create(&threads[i], NULL, Mandelbrot, (void*)(p)); 
+        pthread_create(&threads[i], NULL, JuliaSet, (void*)(p)); 
     } 
   
 
@@ -85,52 +90,5 @@ int main()
       if(((i + 1) % size) == 0) printf("\n");
    }
    printf("\n");
-
-       const int bpp = 32;
-
-sf::RenderWindow window(sf::VideoMode(size, size, bpp), "Mandelbrot");
-    window.setVerticalSyncEnabled(true);
-
-
-    std::vector<sf::CircleShape> points;
-
-    for (int i=0; i<size; i++){
-        for(int j = 0; j < size; j++)
-        {
-            sf::CircleShape ball(1);
-            ball.setFillColor(sf::Color::White);
-            ball.setOrigin(1 / 2, 1 / 2);
-            ball.setPosition(i,j);
-            points.push_back(ball);
-        }
-    }
-
-    sf::Clock clock;
-    sf::Time elapsed = clock.restart();
-    const sf::Time update_ms = sf::seconds(1.f / 120.f);
-    while (window.isOpen()) {
-
-        sf::Event event;
-        while (window.pollEvent(event)) {
-
-            if ((event.type == sf::Event::Closed) ||
-                ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Escape))) {
-                window.close();
-                break;
-            }
-        }
-
-
-        window.clear();
-        for (int i=0; i<totalElements; i++) {
-                if(matrixC[i] == 1) points[i].setFillColor(sf::Color::Black);
-                else points[i].setFillColor(sf::Color::White);
-                window.draw(points[i]);
-        }
-        window.display();
-    }
-
-    return EXIT_SUCCESS;
-
-
+    return 0; 
 } 

@@ -47,9 +47,15 @@ int main() {
 	float *matrixB = NULL;
 	int *matrixC = NULL;
     int size;
+    float real;
+    float im;
+    printf("Inserte el N de la Matriz N*N \n");
     scanf("%d", &size);
-    float real = 0;
-    float im  = 0;
+
+    printf("Inserte real e imaginario como semillas (-2 -> 2) \n");
+    scanf("%f", &real);
+    scanf("%f", &im);
+
     float seed = (real * real) + (im * im);
 	int totalElements = size*size;
 
