@@ -1,35 +1,48 @@
-#include <iostream>
-#include <vector>
-#include <thread>
-
-using namespace std;
-
-void multi(int N, std::vector<std::vector<int>> A, std::vector<std::vector<int>> B, std::vector<std::vector<int>> &C) {
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < N; j++) {
-            for (int k = 0; k < N; k++) {
-                C[i][j] += A[i][k] * B[k][j];
+#include <bits/stdc++.h> 
+using namespace std; 
+  
+#define MAX 4096
+  
+#define MAX_THREAD 4
+  
+int matA[MAX][MAX]; 
+int matB[MAX][MAX]; 
+int matC[MAX][MAX]; 
+int step_i = 0; 
+  
+void* multi(void* arg) {
+    int core = step_i++; 
+  
+    for (int i = core * MAX / 4; i < (core + 1) * MAX / 4; i++) {
+        for (int j = 0; j < MAX; j++) {
+            for (int k = 0; k < MAX; k++) {
+                matC[i][j] += matA[i][k] * matB[k][j];
             }
+                
         }
+            
     }
-}
+         
+} 
+  
+int main() { 
+    for (int i = 0; i < MAX; i++) { 
+        for (int j = 0; j < MAX; j++) { 
+            matA[i][j] = rand() % 100; 
+            matB[i][j] = rand() % 100; 
+        } 
+    } 
+  
+    pthread_t threads[MAX_THREAD]; 
+  
+    for (int i = 0; i < MAX_THREAD; i++) { 
+        int* p; 
+        pthread_create(&threads[i], NULL, multi, (void*)(p)); 
+    } 
 
-int main() {
-    int N;
-    cin >> N;
-
-    std::vector<std::vector<int>> A(N, std::vector<int>(N, 0));
-    std::vector<std::vector<int>> B(N, std::vector<int>(N, 0));
-    std::vector<std::vector<int>> C(N, std::vector<int>(N, 0));
-
-    int i, j;
-
-    for (i = 0; i < N; i++) {
-        for (j = 0; j < N; j++) {
-            A[i][j] = rand() % 100;
-            B[i][j] = rand() % 100;
-        }
+    for (int i = 0; i < MAX_THREAD; i++) {
+        pthread_join(threads[i], NULL);
     }
-
-    multi(N, A, B, C);
-}
+  
+    return 0; 
+} 
