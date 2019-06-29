@@ -1,6 +1,3 @@
 *.ipch
-matrix*
-testing/matrix*
 */*.out
-*/matrix*
 *.vscode
