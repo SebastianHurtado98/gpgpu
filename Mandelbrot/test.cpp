@@ -14,7 +14,12 @@ int main()
    int size;
    scanf("%d", &size);
    int totalElements = size*size;
-
+    const int IMAGE_WIDTH = 512;
+    const int IMAGE_HEIGHT = 512;
+    float zoom = 0.004;
+    float offsetX = -0.7;
+    float offsetY = 0.0;
+    int MAX = 100;
  
    unsigned int sizeC = size * size;
    unsigned int memSizeC = sizeof(float) * sizeC;
@@ -54,7 +59,7 @@ int main()
           CL_MEM_READ_WRITE, 
           memSizeC, NULL, &errcode);
 
-   char *clMatrixMul = "__kernel void matrixMul(__global float* C, int size){"
+   char *clMatrixMul = "__kernel void matrixMul(__global float* C, int zoom, float offsetX, float offsetY, int max, int size){"
    "int tx = get_global_id(0);"
    "int ty = get_global_id(1);"
    "float value = 0;"
@@ -78,6 +83,14 @@ int main()
    errcode = clSetKernelArg(clKernel, 0, 
               sizeof(cl_mem), (void *)&bufferC);
    errcode = clSetKernelArg(clKernel, 1, 
+              sizeof(int), (void *)&zoom);
+   errcode = clSetKernelArg(clKernel, 2, 
+              sizeof(float), (void *)&offsetX);
+   errcode = clSetKernelArg(clKernel, 3, 
+              sizeof(float), (void *)&offsetY);
+   errcode = clSetKernelArg(clKernel, 4, 
+              sizeof(int), (void *)&MAX);
+   errcode = clSetKernelArg(clKernel, 5, 
               sizeof(int), (void *)&size);
  
    localWorkSize[0] = 16;
