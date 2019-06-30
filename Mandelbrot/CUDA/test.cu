@@ -60,16 +60,16 @@ int main(void) {
 
     unsigned char *dev_bitmap;
 
-    HANDLE_ERROR(cudaMalloc((void**)&dev_bitmap, bitmap.image_size()));
+    cudaMalloc((void**)&dev_bitmap, bitmap.image_size());
 
     dim3 grid(DIM, DIM);
     kernel<<<grid, 1>>>(dev_bitmap);
 
-    HANDLE_ERROR(cudaMemcpy(bitmap.get_ptr(), dev_bitmap, bitmap.image_size(), cudaMemcpyDeviceToHost));
+    cudaMemcpy(bitmap.get_ptr(), dev_bitmap, bitmap.image_size(), cudaMemcpyDeviceToHost);
 
     bitmap.display_and_exit();
 
-    HANDLE_ERROR(cudaFree(dev_bitmap));
+    cudaFree(dev_bitmap);
 
 
 }
