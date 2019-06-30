@@ -14,10 +14,7 @@ __global__ void matrixMultiplicationKernel(float* A, float* B, float* C, int N) 
     float tmpSum = 0;
 
     if (ROW < N && COL < N) {
-<<<<<<< HEAD
         // each thread computes one element of the block sub-matrix
-=======
->>>>>>> presentation
         for (int i = 0; i < N; i++) {
             tmpSum += A[ROW * N + i] * B[i * N + COL];
         }

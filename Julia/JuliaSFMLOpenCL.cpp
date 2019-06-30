@@ -189,7 +189,6 @@ int main()
         
         JuliaSet(pointmap, results);
         
-        
         window.clear();
         window.draw(pointmap);
         window.display();
