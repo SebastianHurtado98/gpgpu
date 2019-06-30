@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <random>
+#include <sstream>
 
 const int width = 1280;
 const int height = 720;
@@ -9,6 +10,34 @@ float zoom = 275.0f;
 int precision = 300;
 int x_shift = width * 2.5;
 int y_shift = height * 1.2;
+std::vector<int> framesPerSecond;
+
+
+class FPS
+{ 
+public:
+	FPS() : mFrame(0), mFps(0) {}
+
+	const unsigned int getFPS() const { return mFps; }
+
+private:
+	unsigned int mFrame;
+	unsigned int mFps;
+	sf::Clock mClock;
+
+public:
+	void update()
+	{
+		if(mClock.getElapsedTime().asSeconds() >= 1.f)
+		{
+			mFps = mFrame;
+			mFrame = 0;
+			mClock.restart();
+		}
+ 
+		++mFrame;
+	}
+};
 
 
 void JuliaSet(sf::VertexArray& vertexarray, float* data, int x, int y)
@@ -46,7 +75,7 @@ void JuliaSet(sf::VertexArray& vertexarray, float* data, int x, int y)
 int main()
 {
     sf::RenderWindow window(sf::VideoMode(width, height), "Mandelbrot - Julia");
-    window.setFramerateLimit(30);
+    window.setFramerateLimit(60);
     sf::VertexArray pointmap(sf::Points, width * height);
                        
     int memElements = sizeof(int) * dataSize;
@@ -64,6 +93,8 @@ int main()
     
     
     JuliaSet(pointmap, data, mouse_x, mouse_y);
+
+    FPS fps;
     
     while (window.isOpen())
     {
@@ -90,6 +121,17 @@ int main()
         window.clear();
         window.draw(pointmap);
         window.display();
+
+        fps.update();
+        std::ostringstream ss;
+        ss << fps.getFPS();
+        framesPerSecond.push_back(fps.getFPS());
+        window.setTitle(ss.str());
+
+    }
+
+    for(auto f : framesPerSecond){
+        printf("%d \n", f);
     }
     
     return 0;

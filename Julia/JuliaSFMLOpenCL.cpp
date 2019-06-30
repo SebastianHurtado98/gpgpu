@@ -6,13 +6,41 @@
 #include <math.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sstream>
 #include <sys/stat.h>
 #include <CL/cl.h>
+#include <vector>
 #include "SFML/Graphics.hpp"
 
 const int width = 1280;
 const int height = 720;
 const int dataSize = 1280*720;
+std::vector<int> framesPerSecond;
+
+class FPS
+{ 
+public:
+	FPS() : mFrame(0), mFps(0) {}
+	const unsigned int getFPS() const { return mFps; }
+
+private:
+	unsigned int mFrame;
+	unsigned int mFps;
+	sf::Clock mClock;
+
+public:
+	void update()
+	{
+		if(mClock.getElapsedTime().asSeconds() >= 1.f)
+		{
+			mFps = mFrame;
+			mFrame = 0;
+			mClock.restart();
+		}
+ 
+		++mFrame;
+	}
+};
 
 
 void JuliaSet(sf::VertexArray& vertexarray, float* results)
@@ -93,7 +121,7 @@ int main()
     clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, sizeof(float) * dataSize, data, 0, NULL, NULL);
     
     sf::RenderWindow window(sf::VideoMode(width, height), "Mandelbrot - Julia");
-    window.setFramerateLimit(30);
+    window.setFramerateLimit(60);
     sf::VertexArray pointmap(sf::Points, width * height);
     
 
@@ -141,6 +169,8 @@ int main()
     err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * dataSize, results, 0, NULL, NULL );
     
     JuliaSet(pointmap, results);
+
+    FPS fps;
     
     while (window.isOpen())
     {
@@ -193,6 +223,18 @@ int main()
         window.clear();
         window.draw(pointmap);
         window.display();
+
+        fps.update();
+        std::ostringstream ss;
+        ss << fps.getFPS();
+        framesPerSecond.push_back(fps.getFPS());
+
+        window.setTitle(ss.str());
+
+    }
+
+        for(auto f : framesPerSecond){
+        printf("%d \n", f);
     }
     
     return 0;
