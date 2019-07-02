@@ -1,6 +1,5 @@
 #include <cuda_runtime.h>
 #include "cpu_bitmap.h"
-#include "book.h"
 
 #define DIM 1000
 
@@ -8,7 +7,7 @@ struct cuComplex {
     float r;
     float i;
 
-    cuComplex(float a, float b) : r(a), i(b) {}
+    __device__ cuComplex(float a, float b) : r(a), i(b) {}
 
     __device__ float magnitude2 ( void ) {
         return r * r + i * i;
