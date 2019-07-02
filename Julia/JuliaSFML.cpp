@@ -108,7 +108,7 @@ int main()
         mouse_x = sf::Mouse::getPosition().x;
         mouse_y = sf::Mouse::getPosition().y;
         
-        //pantalla negra
+        //black (empty) screen
         for (int i = 0; i < width*height; i++)
         {
             pointmap[i].color = sf::Color::Black;

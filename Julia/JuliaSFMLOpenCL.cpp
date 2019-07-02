@@ -205,7 +205,7 @@ int main()
         
         if (err != CL_SUCCESS)
         {
-            printf("Error: Failed to set kernel arguments! %d\n", err);
+            printf("Error: Failed to set kernel arguments %d\n", err);
             exit(1);
         }
         
