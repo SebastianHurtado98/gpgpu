@@ -1,7 +1,5 @@
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <CL/cl.h>
 
    char *programSource = "__kernel                                            \n"
@@ -58,175 +56,60 @@ int main() {
 	elementsA(matrixA, size);
 	elementsA(matrixB, size);
 
-
-    cl_int status;  
-     
-    
     cl_uint numPlatforms = 0;
     cl_platform_id *platforms = NULL;
 
-    status = clGetPlatformIDs(0, NULL, &numPlatforms);
+    clGetPlatformIDs(0, NULL, &numPlatforms);
  
 
-    platforms =   
-        (cl_platform_id*)malloc(
-            numPlatforms*sizeof(cl_platform_id));
+    platforms = (cl_platform_id*)malloc(numPlatforms*sizeof(cl_platform_id));
  
 
-    status = clGetPlatformIDs(numPlatforms, platforms, 
-                NULL);
+    clGetPlatformIDs(numPlatforms, platforms, NULL);
 
     
     cl_uint numDevices = 0;
     cl_device_id *devices = NULL;
-    status = clGetDeviceIDs(
-        platforms[0], 
-        CL_DEVICE_TYPE_ALL, 
-        0, 
-        NULL, 
-        &numDevices);
-
-
-    devices = 
-        (cl_device_id*)malloc(
-            numDevices*sizeof(cl_device_id));
-
-    status = clGetDeviceIDs(
-        platforms[0], 
-        CL_DEVICE_TYPE_ALL,        
-        numDevices, 
-        devices, 
-        NULL);
+    clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_ALL, 0, NULL, &numDevices);
+    devices = (cl_device_id*) malloc(numDevices*sizeof(cl_device_id));
+    clGetDeviceIDs(platforms[0], CL_DEVICE_TYPE_ALL, numDevices, devices, NULL);
 
 
     cl_context context = NULL;
-
-    context = clCreateContext(
-        NULL, 
-        numDevices, 
-        devices, 
-        NULL, 
-        NULL, 
-        &status);
+    context = clCreateContext(NULL, numDevices, devices, NULL, NULL, NULL);
 
     
     cl_command_queue cmdQueue;
-
-    cmdQueue = clCreateCommandQueue(
-        context, 
-        devices[0], 
-        0, 
-        &status);
+    cmdQueue = clCreateCommandQueue(context, devices[0], 0, NULL);
 
     cl_mem bufferA; 
     cl_mem bufferB;
     cl_mem bufferC;  
 
-
-    bufferA = clCreateBuffer(
-        context, 
-        CL_MEM_READ_ONLY,                         
-        datasizeTotal, 
-        NULL, 
-        &status);
-
-    bufferB = clCreateBuffer(
-        context, 
-        CL_MEM_READ_ONLY,                         
-        datasizeTotal, 
-        NULL, 
-        &status);
-
-    bufferC = clCreateBuffer(
-        context, 
-        CL_MEM_WRITE_ONLY,                 
-        datasizeTotal, 
-        NULL, 
-        &status);
+    bufferA = clCreateBuffer(context, CL_MEM_READ_ONLY, datasizeTotal, NULL, NULL);
+    bufferB = clCreateBuffer(context, CL_MEM_READ_ONLY, datasizeTotal, NULL, NULL);
+    bufferC = clCreateBuffer(context, CL_MEM_WRITE_ONLY, datasizeTotal, NULL, NULL);
 
 
-    cl_program program = clCreateProgramWithSource(
-        context, 
-        1, 
-        (const char**)&programSource,                                 
-        NULL, 
-        &status);
-
-    status = clBuildProgram(
-        program, 
-        numDevices, 
-        devices, 
-        NULL, 
-        NULL, 
-        NULL);
+    cl_program program = clCreateProgramWithSource(context, 1, (const char**)&programSource, NULL, NULL);
+    clBuildProgram(program, numDevices, devices, NULL, NULL, NULL);
 
     cl_kernel kernel = NULL;
 
-    kernel = clCreateKernel(program, "Mandelbrot", &status);
+    kernel = clCreateKernel(program, "Mandelbrot", NULL);
 			
-        status = clEnqueueWriteBuffer(
-            cmdQueue, 
-            bufferA, 
-            CL_FALSE, 
-            0, 
-            datasizeTotal,                         
-            matrixA, 
-            0, 
-            NULL, 
-            NULL);
-        
-        status = clEnqueueWriteBuffer(
-            cmdQueue, 
-            bufferB, 
-            CL_FALSE, 
-            0, 
-            datasizeTotal,                                  
-            matrixB, 
-            0, 
-            NULL, 
-            NULL);
+    clEnqueueWriteBuffer(cmdQueue, bufferA, CL_FALSE, 0, datasizeTotal, matrixA, 0, NULL, NULL);
+    clEnqueueWriteBuffer(cmdQueue, bufferB, CL_FALSE, 0, datasizeTotal, matrixB, 0, NULL, NULL);
 
-        status  = clSetKernelArg(
-            kernel, 
-            0, 
-            sizeof(cl_mem), 
-            &bufferA);
-        status |= clSetKernelArg(
-            kernel, 
-            1, 
-            sizeof(cl_mem), 
-            &bufferB);
-        status |= clSetKernelArg(
-            kernel, 
-            2, 
-            sizeof(cl_mem), 
-            &bufferC);
+    clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);
+    clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferB);
+    clSetKernelArg(kernel, 2, sizeof(cl_mem), &bufferC);
 
-        size_t globalWorkSize[1];    
-        globalWorkSize[0] = totalElements;
+    size_t globalWorkSize[1];    
+    globalWorkSize[0] = totalElements;
 
-        status = clEnqueueNDRangeKernel(
-            cmdQueue, 
-            kernel, 
-            1, 
-            NULL, 
-            globalWorkSize, 
-            NULL, 
-            0, 
-            NULL, 
-            NULL);
-
-
-        clEnqueueReadBuffer(
-            cmdQueue, 
-            bufferC, 
-            CL_TRUE, 
-            0, 
-            datasizeTotal, 
-            matrixC, 
-            0, 
-            NULL, 
-            NULL);
+    clEnqueueNDRangeKernel(cmdQueue, kernel, 1, NULL, globalWorkSize, NULL, 0, NULL, NULL);
+    clEnqueueReadBuffer(cmdQueue, bufferC, CL_TRUE, 0, datasizeTotal, matrixC, 0, NULL, NULL);
 
 
    printf("\n\nMatrix C: \n");
