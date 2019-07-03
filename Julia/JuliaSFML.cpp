@@ -1,13 +1,12 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
-#include <random>
 #include <sstream>
 
 const int width = 1280;
 const int height = 720;
 const int dataSize = 1280*720;
 float zoom = 275.0f;
-int precision = 300;
+int maximum = 300;
 int x_shift = width * 2.5;
 int y_shift = height * 1.2;
 std::vector<int> framesPerSecond;
@@ -45,28 +44,31 @@ void JuliaSet(sf::VertexArray& vertexarray, float* data, int x, int y)
 
     for (int i = 0; i <dataSize; i++){                                
         int j = i % 1280; int k = i / 1280;                              
-        float c_real = ((float)x) / zoom  - x_shift / 1280.0f;                
-        float c_imag = ((float)y) / zoom  - y_shift / 720.0f;                    
-        float z_real = ((float)j) / zoom  - x_shift / 1280.0f;                                             
-        float z_imag = ((float)k) / zoom  - y_shift / 720.0f; 
-        int iterations = 0;                           
+        float cReal = ((float)x) / zoom  - x_shift / 1280.0f;                
+        float cImag = ((float)y) / zoom  - y_shift / 720.0f;                    
+        float zReal = ((float)j) / zoom  - x_shift / 1280.0f;                                             
+        float zImag = ((float)k) / zoom  - y_shift / 720.0f; 
+        int counter = 0;                           
         if(i < dataSize)                                                      
-        for (int l = 0; l < precision; l++)                               
+        for (int j = 0; j < maximum; j++)                               
         {                                                                  
-            float z1_real = z_real * z_real - z_imag * z_imag; float z1_imag = 2 * z_real * z_imag;
-            z_real = z1_real + c_real; z_imag = z1_imag + c_imag; iterations++;                               
-            if (z_real * z_real + z_imag * z_imag > 4) { break; }                                
+            float nextReal = zReal * zReal - zImag * zImag; 
+            float z1Imag = 2 * zReal * zImag;
+            zReal = nextReal + cReal; 
+            zImag = z1Imag + cImag; 
+            counter++;                               
+            if (zReal * zReal + zImag * zImag > 4.0) { break; }                                
         }                                                                   
-        data[i] = iterations;                                     
+        data[i] = counter;                                     
         }                                                 
     for(int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
-            int iterations = data[i * width + j];
+            int counter = data[i * width + j];
 
             vertexarray[i*width + j].position = sf::Vector2f(j, i);
-            sf::Color color(iterations%256, iterations%256, iterations%256);
+            sf::Color color(counter%256, counter%256, counter%256);
             vertexarray[i*width + j].color = color;
         }
     }
@@ -74,9 +76,9 @@ void JuliaSet(sf::VertexArray& vertexarray, float* data, int x, int y)
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(width, height), "Mandelbrot - Julia");
+    sf::RenderWindow window(sf::VideoMode(width, height), "Julia");
     window.setFramerateLimit(60);
-    sf::VertexArray pointmap(sf::Points, width * height);
+    sf::VertexArray pixels(sf::Points, width * height);
                        
     int memElements = sizeof(int) * dataSize;
     float* data = (float*) malloc(memElements);
@@ -85,14 +87,14 @@ int main()
     
     for (int i = 0; i < width*height; i++)
     {
-        pointmap[i].color = sf::Color::Black;
+        pixels[i].color = sf::Color::Black;
     }
 
     int mouse_x = sf::Mouse::getPosition().x;
     int mouse_y = sf::Mouse::getPosition().y;
     
     
-    JuliaSet(pointmap, data, mouse_x, mouse_y);
+    JuliaSet(pixels, data, mouse_x, mouse_y);
 
     FPS fps;
     
@@ -108,18 +110,16 @@ int main()
         mouse_x = sf::Mouse::getPosition().x;
         mouse_y = sf::Mouse::getPosition().y;
         
-        //pantalla negra
+        //black (empty) screen
         for (int i = 0; i < width*height; i++)
         {
-            pointmap[i].color = sf::Color::Black;
+            pixels[i].color = sf::Color::Black;
         }
         
+        JuliaSet(pixels, data, mouse_x, mouse_y);
 
-        JuliaSet(pointmap, data, mouse_x, mouse_y);
-        
-        
         window.clear();
-        window.draw(pointmap);
+        window.draw(pixels);
         window.display();
 
         fps.update();

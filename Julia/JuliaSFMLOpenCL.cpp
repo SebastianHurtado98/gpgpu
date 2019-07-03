@@ -15,6 +15,10 @@
 const int width = 1280;
 const int height = 720;
 const int dataSize = 1280*720;
+float zoom = 275.0f;
+int precision = 300;
+int x_shift = width * 2.5;
+int y_shift = height * 1.2;
 std::vector<int> framesPerSecond;
 
 class FPS
@@ -50,7 +54,6 @@ void JuliaSet(sf::VertexArray& vertexarray, float* results)
         for (int j = 0; j < width; j++)
         {
             int iterations = results[i * width + j];
-
             vertexarray[i*width + j].position = sf::Vector2f(j, i);
             sf::Color color(iterations%256, iterations%256, iterations%256);
             vertexarray[i*width + j].color = color;
@@ -59,33 +62,33 @@ void JuliaSet(sf::VertexArray& vertexarray, float* results)
 }
 
 
-const char *KernelSource = "\n" \
-"__kernel void Calculate_Julia_Set(                                                       \n" \
-"   __global float* input,                                              \n" \
-"   __global float* output,                                             \n" \
+const char *programSource = "\n" \
+"__kernel void JuliaSet(                                                       \n" \
+"   __global float* bufferA,                                              \n" \
+"   __global float* bufferB,                                             \n" \
 "   const unsigned int dataSize, int pixel_shift_x, int pixel_shift_y, int precision, float zoom, int x, int y)                                           \n" \
 "{                                                                      \n" \
 "   int i = get_global_id(0);                                           \n" \
 "   int j = i % 1280; int k = i / 1280;                                 \n" \
-"   float c_real = ((float)x) / zoom  - pixel_shift_x / 1280.0f;                    \n" \
-"   float c_imag = ((float)y) / zoom  - pixel_shift_y / 720.0f;                    \n" \
-"   float z_real = ((float)j) / zoom  - pixel_shift_x / 1280.0f;                                               \n" \
-"   float z_imag = ((float)k) / zoom  - pixel_shift_y / 720.0f; int iterations = 0;                             \n" \
+"   float cReal = ((float)x) / zoom  - pixel_shift_x / 1280.0f;                    \n" \
+"   float cImag = ((float)y) / zoom  - pixel_shift_y / 720.0f;                    \n" \
+"   float zReal = ((float)j) / zoom  - pixel_shift_x / 1280.0f;                                               \n" \
+"   float zImag = ((float)k) / zoom  - pixel_shift_y / 720.0f; int iterations = 0;                             \n" \
 "   if(i < dataSize)                                                       \n" \
 "   for (int l = 0; l < precision; l++)                                 \n" \
 "   {                                                                   \n" \
-"       float z1_real = z_real * z_real - z_imag * z_imag; float z1_imag = 2 * z_real * z_imag; \n" \
-"       z_real = z1_real + c_real; z_imag = z1_imag + c_imag; iterations++;                                 \n" \
-"       if (z_real * z_real + z_imag * z_imag > 4) { break; }                                \n" \
+"       float nextReal = zReal * zReal - zImag * zImag; float z1_imag = 2 * zReal * zImag; \n" \
+"       zReal = nextReal + cReal; zImag = z1_imag + cImag; iterations++;                                 \n" \
+"       if (zReal * zReal + zImag * zImag > 4) { break; }                                \n" \
 "   }                                                                   \n" \
-"   output[i] = iterations;                                             \n" \
+"   bufferB[i] = iterations;                                             \n" \
 "}                                                                      \n" \
 "\n";
 
 
 int main()
 {
-    int err;                          
+               
     int memElements = sizeof(int) * dataSize;
     float* data = (float*) malloc(memElements);
     float* results = (float*) malloc(memElements);
@@ -99,8 +102,8 @@ int main()
     cl_program program;
     cl_kernel kernel;
     
-    cl_mem input;              
-    cl_mem output;
+    cl_mem bufferA;              
+    cl_mem bufferB;
     
     
     clGetDeviceIDs(NULL, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
@@ -109,56 +112,42 @@ int main()
 
     commands = clCreateCommandQueue(context, device_id, 0, NULL);
 
-    program = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, NULL);
+    program = clCreateProgramWithSource(context, 1, (const char **) &programSource, NULL, NULL);
 
     clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     
-    kernel = clCreateKernel(program, "Calculate_Julia_Set", NULL);
+    kernel = clCreateKernel(program, "JuliaSet", NULL);
 
-    input = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * dataSize, NULL, NULL);
-    output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * dataSize, NULL, NULL);
+
+    bufferA = clCreateBuffer(context,  CL_MEM_READ_ONLY,  sizeof(float) * dataSize, NULL, NULL);
+    bufferB = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * dataSize, NULL, NULL);
     
-    clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, sizeof(float) * dataSize, data, 0, NULL, NULL);
+    clEnqueueWriteBuffer(commands, bufferA, CL_TRUE, 0, sizeof(float) * dataSize, data, 0, NULL, NULL);
     
-    sf::RenderWindow window(sf::VideoMode(width, height), "Mandelbrot - Julia");
+    sf::RenderWindow window(sf::VideoMode(width, height), "Julia");
     window.setFramerateLimit(60);
-    sf::VertexArray pointmap(sf::Points, width * height);
+    sf::VertexArray pixels(sf::Points, width * height);
     
-
-    float zoom = 275.0f;
-    int precision = 300;
-    int x_shift = width * 2.5;
-    int y_shift = height * 1.2;
     
     clGetKernelWorkGroupInfo(kernel, device_id, CL_KERNEL_WORK_GROUP_SIZE, sizeof(local), &local, NULL);
     
-    for (int i = 0; i < width*height; i++)
-    {
-        pointmap[i].color = sf::Color::Black;
-    }
+    for (int i = 0; i < width*height; i++) pixels[i].color = sf::Color::Black;
     
-
-    clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, sizeof(float) * dataSize, data, 0, NULL, NULL);
+    clEnqueueWriteBuffer(commands, bufferA, CL_TRUE, 0, sizeof(float) * dataSize, data, 0, NULL, NULL);
     
     int mouse_x = sf::Mouse::getPosition().x;
     int mouse_y = sf::Mouse::getPosition().y;
     
-    err = 0;
-    err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
-    err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &output);
-    err |= clSetKernelArg(kernel, 2, sizeof(unsigned int), &dataSize);
-    err |= clSetKernelArg(kernel, 3, sizeof(int), &x_shift);
-    err |= clSetKernelArg(kernel, 4, sizeof(int), &y_shift);
-    err |= clSetKernelArg(kernel, 5, sizeof(int), &precision);
-    err |= clSetKernelArg(kernel, 6, sizeof(float), &zoom);
-    err |= clSetKernelArg(kernel, 7, sizeof(int), &mouse_x);
-    err |= clSetKernelArg(kernel, 8, sizeof(float), &mouse_y);
-    
-    if (err != CL_SUCCESS)
-    {
-        printf("Error: Failed to set kernel arguments! %d\n", err);
-        exit(1);
-    }
+
+    clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);
+    clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferB);
+    clSetKernelArg(kernel, 2, sizeof(unsigned int), &dataSize);
+    clSetKernelArg(kernel, 3, sizeof(int), &x_shift);
+    clSetKernelArg(kernel, 4, sizeof(int), &y_shift);
+    clSetKernelArg(kernel, 5, sizeof(int), &precision);
+    clSetKernelArg(kernel, 6, sizeof(float), &zoom);
+    clSetKernelArg(kernel, 7, sizeof(int), &mouse_x);
+    clSetKernelArg(kernel, 8, sizeof(float), &mouse_y);
     
     global = dataSize;
     
@@ -166,9 +155,9 @@ int main()
    
     clFinish(commands);
     
-    err = clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * dataSize, results, 0, NULL, NULL );
+    clEnqueueReadBuffer( commands, bufferB, CL_TRUE, 0, sizeof(float) * dataSize, results, 0, NULL, NULL );
     
-    JuliaSet(pointmap, results);
+    JuliaSet(pixels, results);
 
     FPS fps;
     
@@ -184,43 +173,32 @@ int main()
         mouse_x = sf::Mouse::getPosition().x;
         mouse_y = sf::Mouse::getPosition().y;
         
-        //pantalla negra
-        for (int i = 0; i < width*height; i++)
-        {
-            pointmap[i].color = sf::Color::Black;
-        }
-        
+        for (int i = 0; i < width*height; i++) pixels[i].color = sf::Color::Black;
 
-        clEnqueueWriteBuffer(commands, input, CL_TRUE, 0, sizeof(float) * dataSize, data, 0, NULL, NULL);
+        clEnqueueWriteBuffer(commands, bufferA, CL_TRUE, 0, sizeof(float) * dataSize, data, 0, NULL, NULL);
 
-        err  = clSetKernelArg(kernel, 0, sizeof(cl_mem), &input);
-        err |= clSetKernelArg(kernel, 1, sizeof(cl_mem), &output);
-        err |= clSetKernelArg(kernel, 2, sizeof(unsigned int), &dataSize);
-        err |= clSetKernelArg(kernel, 3, sizeof(int), &x_shift);
-        err |= clSetKernelArg(kernel, 4, sizeof(int), &y_shift);
-        err |= clSetKernelArg(kernel, 5, sizeof(int), &precision);
-        err |= clSetKernelArg(kernel, 6, sizeof(float), &zoom);
-        err |= clSetKernelArg(kernel, 7, sizeof(int), &mouse_x);
-        err |= clSetKernelArg(kernel, 8, sizeof(float), &mouse_y);
-        
-        if (err != CL_SUCCESS)
-        {
-            printf("Error: Failed to set kernel arguments! %d\n", err);
-            exit(1);
-        }
-        
+        clSetKernelArg(kernel, 0, sizeof(cl_mem), &bufferA);
+        clSetKernelArg(kernel, 1, sizeof(cl_mem), &bufferB);
+        clSetKernelArg(kernel, 2, sizeof(unsigned int), &dataSize);
+        clSetKernelArg(kernel, 3, sizeof(int), &x_shift);
+        clSetKernelArg(kernel, 4, sizeof(int), &y_shift);
+        clSetKernelArg(kernel, 5, sizeof(int), &precision);
+        clSetKernelArg(kernel, 6, sizeof(float), &zoom);
+        clSetKernelArg(kernel, 7, sizeof(int), &mouse_x);
+        clSetKernelArg(kernel, 8, sizeof(float), &mouse_y);
+
 
         global = dataSize;
         clEnqueueNDRangeKernel(commands, kernel, 1, NULL, &global, &local, 0, NULL, NULL);
 
         clFinish(commands);
         
-        clEnqueueReadBuffer( commands, output, CL_TRUE, 0, sizeof(float) * dataSize, results, 0, NULL, NULL );
+        clEnqueueReadBuffer( commands, bufferB, CL_TRUE, 0, sizeof(float) * dataSize, results, 0, NULL, NULL );
         
-        JuliaSet(pointmap, results);
+        JuliaSet(pixels, results);
         
         window.clear();
-        window.draw(pointmap);
+        window.draw(pixels);
         window.display();
 
         fps.update();

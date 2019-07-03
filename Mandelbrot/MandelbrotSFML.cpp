@@ -1,10 +1,9 @@
 #include <SFML/Graphics.hpp>
-#include <cmath>
 #include <random>
 
 const int IMAGE_WIDTH = 512;
 const int IMAGE_HEIGHT = 512;
-double zoom = 0.004;
+double zoom = 0.002;
 double offsetX = -0.7;
 double offsetY = 0.0;
 const int MAX = 100;
@@ -94,14 +93,14 @@ int mandelbrot(double startReal, double startImag, int maximum) {
     double zImag = startImag;
     double nextRe;
 
-    while (pow(zReal, 2.0) + pow(zImag, 2.0) <= 4.0 && counter <= maximum) {
-        nextRe = pow(zReal, 2.0) - pow(zImag, 2.0) + startReal;
+    while (zReal*zReal + zImag*zImag <= 4.0 && counter <= maximum) {
+        nextRe = zReal*zReal - zImag*zImag + startReal;
         zImag = 2.0 * zReal * zImag + startImag;
         zReal = nextRe;
         if (zReal == startReal && zImag == startImag) { 
             return 0;
         }
-        counter += 1;
+        counter++;
     }
 
     if (counter >= maximum) {
