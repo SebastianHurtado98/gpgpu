@@ -5,7 +5,7 @@
 #include <cuda_runtime.h>
 #include "kernel.h"
 #include "kernel.cu"
-#include "dev_array.h"
+#include "array.h"
 #include <math.h>
 
 using namespace std;
@@ -26,9 +26,9 @@ int main()
         }
     }
 
-    dev_array<float> d_A(SIZE);
-    dev_array<float> d_B(SIZE);
-    dev_array<float> d_C(SIZE);
+    array<float> d_A(SIZE);
+    array<float> d_B(SIZE);
+    array<float> d_C(SIZE);
 
     d_A.set(&h_A[0], SIZE);
     d_B.set(&h_B[0], SIZE);

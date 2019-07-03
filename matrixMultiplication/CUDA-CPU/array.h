@@ -6,40 +6,35 @@
 #include <cuda_runtime.h>
 
 template <class T>
-class dev_array
+class array
 {
-// public functions
 public:
-    explicit dev_array()
+    explicit array()
         : start_(0),
           end_(0)
     {}
 
-    // constructor
-    explicit dev_array(size_t size)
+    explicit array(size_t size)
     {
         allocate(size);
     }
-    // destructor
-    ~dev_array()
+
+    ~array()
     {
         free();
     }
 
-    // resize the vector
     void resize(size_t size)
     {
         free();
         allocate(size);
     }
 
-    // get the size of the array
     size_t getSize() const
     {
         return end_ - start_;
     }
 
-    // get data
     const T* getData() const
     {
         return start_;
@@ -50,7 +45,6 @@ public:
         return start_;
     }
 
-    // set
     void set(const T* src, size_t size)
     {
         size_t min = std::min(size, getSize());
@@ -60,7 +54,7 @@ public:
             throw std::runtime_error("failed to copy to device memory");
         }
     }
-    // get
+
     void get(T* dest, size_t size)
     {
         size_t min = std::min(size, getSize());
@@ -72,9 +66,7 @@ public:
     }
 
 
-// private functions
 private:
-    // allocate memory on the device
     void allocate(size_t size)
     {
         cudaError_t result = cudaMalloc((void**)&start_, size * sizeof(T));
@@ -86,7 +78,6 @@ private:
         end_ = start_ + size;
     }
 
-    // free memory on the device
     void free()
     {
         if (start_ != 0)
