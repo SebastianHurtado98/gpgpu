@@ -1,0 +1,4 @@
+*.ipch
+*/*.out
+*.vscode/
+*.bin
